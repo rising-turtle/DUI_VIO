@@ -19,13 +19,13 @@ GMM_Model::GMM_Model(){
 GMM_Model::~GMM_Model(){}
 
 double GMM_Model::loss_d(double d, double mu, double sigma_d, double local_sigma){
-	double scale = 1.2; //0.7;
+	double scale = 1.5; // 1.2; //0.7;
 	// return log(scale*SQ(d)/(SQ(sigma_d)*SQ(local_sigma))+1);
 	return scale*log(SQ(d)/(SQ(sigma_d)*SQ(local_sigma))+1); // lambda = 1.2 
 }
 
 double GMM_Model::loss_lambda(double delta_lambda, double lambda, double local_sigma){
-	double scale = 806800; //700000; // SQ(0.001); // SQ(0.01);
+	double scale = 1e6; // 806800; //700000; // SQ(0.001); // SQ(0.01);
 	// return scale*log(SQ(delta_lambda)*SQ(lambda)/(SQ(local_sigma)) + 1);
 	return scale*log(SQ(delta_lambda)*SQ(lambda)/(SQ(local_sigma))+1); // 806800 806800 3.08269e+06
 	// return log(700000*SQ(delta_lambda)*SQ(lambda)/(SQ(local_sigma))+1); // 806800 806800 3.08269e+06
@@ -189,11 +189,6 @@ void GMM_Model::gmm_model_inv_depth(int r, int c, const cv::Mat& dpt, double &mu
 	// output 
 	mu_lambda = mu_z/sW; 
 	// sig_lambda = 24*sqrt(std_sq/sW - SQ(mu_lambda)); 
-	
-	sig_lambda = 48*sqrt(std_sq/sW - SQ(mu_lambda)); 
-	// sig_lambda = 4.8*sqrt(std_sq/sW - SQ(mu_lambda)); 
-	// sig_lambda = sqrt(std_sq/sW - SQ(mu_lambda)); 
-	// sig_lambda = 4.8 * 0.0005;
-
+	sig_lambda = sqrt(std_sq/sW - SQ(mu_lambda)); 
 	return ; 
 }

@@ -64,6 +64,9 @@ extern bool PUB_THIS_FRAME;
 extern double FREQ;
 extern double nG; // normalize value 
 
+extern bool USE_GMM; // whether use gmm to compute covariance 
+extern bool USE_GMM_EXT; // whether extend gmm by introducing similarity 
+
 void readParameters(ros::NodeHandle &n);
 
 enum SIZE_PARAMETERIZATION

@@ -1,6 +1,13 @@
 #include "solve_5pts.h"
 #include "solve_opt.h"
 
+#ifdef USE_OPENGV
+
+#include <opengv/relative_pose/methods.hpp>
+#include <opengv/relative_pose/CentralRelativeAdapter.hpp>
+#endif 
+
+
 namespace cv {
     void decomposeEssentialMat( InputArray _E, OutputArray _R1, OutputArray _R2, OutputArray _t )
     {
@@ -310,10 +317,41 @@ bool MotionEstimator::solveRelativeHybrid(const vector<pair<Vector3d, Vector3d>>
             inliers = getInliersWithValidDepthCov(corres, mask, *pcov); 
         }
 
+
+        // if use opengv to refine the rotation 
+#ifdef USE_OPENGV
+
+        // cout<<"before opengv R: "<<endl<<R<<endl; 
+
+        Eigen::Matrix3d Rij_e = R;
+
+        opengv::bearingVectors_t bearingVectors1; 
+        opengv::bearingVectors_t bearingVectors2;
+
+        for(int j=0; j<inliers.size(); j++){
+            Vector3d pi = inliers[j].first;
+            pi(0) = pi(0)*pi(2); 
+            pi(1) = pi(1)*pi(2);  
+            Vector3d pj = inliers[j].second; 
+            bearingVectors1.push_back(pi/pi.norm());
+            bearingVectors2.push_back(pj/pj.norm()); 
+        }
+
+        opengv::relative_pose::CentralRelativeAdapter adapter_rbs(
+              bearingVectors1,
+              bearingVectors2,
+              Rij_e ); // rotation);
+
+        // first use eight pts to compute initial rotation 
+        R =  opengv::relative_pose::eigensolver(adapter_rbs);       
+        // cout <<"after opengv R: "<<endl<<R<<endl; 
+#endif
+
         if(inlier_cnt > 12 && inliers.size() >= 5){
 
             // optimization to solve R, T // R is Rji, T is tji
-            sopt.solveHybrid(inliers, R, T, pcov); 
+            // sopt.solveHybrid(inliers, R, T, pcov); 
+            sopt.solveTCeres(inliers, R, T, pcov); 
 
             Rotation = R.transpose(); // Rotation is Rij
             Translation = -R.transpose() * T; // Translation is tij 

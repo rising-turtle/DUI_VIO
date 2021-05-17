@@ -363,9 +363,6 @@ bool FeatureManager::addFeatureCheckParallaxSigma(int frame_count, const map<int
         double sig_d = id_pts.second[0].second(8);
         double sig_l = id_pts.second[0].second(9);  
 
-        // if(feature_id == 196 || feature_id == 226)
-        //    cout<<" feature id: "<<feature_id<<" nor_ui: "<<nor_ui<<" nor_vi: "<<nor_vi<<" ui: "<<ui<<" vi: "<<vi<<" zi: "<<zi<<endl;
-
         FeaturePerFrame f_per_fra(nor_ui, nor_vi, zi); 
         f_per_fra.setAllD(zi, lambda_i, sig_d, sig_l);
         f_per_fra.setUV(ui, vi); 

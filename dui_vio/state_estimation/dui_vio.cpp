@@ -147,7 +147,7 @@ void DUI_VIO::clearState()
     processMeasurements();  
 }*/
 
-void DUI_VIO::associateDepthGMM(map<int, vector<pair<int, Eigen::Matrix<double, 10, 1>>>>& featureFrame, const cv::Mat& dpt)
+void DUI_VIO::associateDepthGMM(map<int, vector<pair<int, Eigen::Matrix<double, 10, 1>>>>& featureFrame, const cv::Mat& dpt, bool use_sim)
 {
     // x, y, z, p_u, p_v, velocity_x, velocity_y;
     map<int, vector<pair<int, Eigen::Matrix<double, 10, 1>>>>::iterator it = featureFrame.begin(); 
@@ -159,13 +159,13 @@ void DUI_VIO::associateDepthGMM(map<int, vector<pair<int, Eigen::Matrix<double, 
         float vi = it->second[0].second(4); // vi
 
         double d = (double)dpt.at<unsigned short>(std::round(vi), std::round(ui)) * 0.001;
-        int use_sim = 1; // 1 
+        // int use_sim = 1; // 1 
         if(d>= 0.3 && d <= 7) {
             // it->second[0].second(2) = d;
 
             double mu_d, mu_l, sig_d, sig_l; 
-            mp_gmm->gmm_model_depth(std::round(vi), std::round(ui), dpt, mu_d, sig_d, use_sim); 
-            mp_gmm->gmm_model_inv_depth(std::round(vi), std::round(ui), dpt, mu_l, sig_l, use_sim); 
+            mp_gmm->gmm_model_depth(std::round(vi), std::round(ui), dpt, mu_d, sig_d, use_sim?1:0); 
+            mp_gmm->gmm_model_inv_depth(std::round(vi), std::round(ui), dpt, mu_l, sig_l, use_sim?1:0); 
 
             it->second[0].second(2) = mu_d; 
             it->second[0].second(7) = mu_l; 
@@ -202,114 +202,6 @@ void DUI_VIO::associateDepthSimple(map<int, vector<pair<int, Eigen::Matrix<doubl
         it++;
     }
     // ROS_DEBUG("DUI_VIO.cpp: associateDepthSimple has %d features with valid depth!", valid_depth_cnt);
-    return ; 
-}
-
-
-void DUI_VIO::associateDepth(map<int, vector<pair<int, Eigen::Matrix<double, 7, 1>>>>& featureFrame, cv::Mat& dpt)
-{
-    pcl::PointCloud<pcl::PointXYZI>::Ptr pc = processDepthImage(dpt); 
-
-    if(pc->points.size() <= 7){
-        ROS_WARN("DUI_VIO: pc points %d, too few, no depth ", pc->points.size()); 
-        return ; 
-    }
-
-    // normalized point cloud to a wall-like pc 
-    static pcl::PointCloud<pcl::PointXYZI>::Ptr nor_pc(new pcl::PointCloud<pcl::PointXYZI>); 
-    nor_pc->points.resize(pc->points.size()); 
-    float zoom_z = 10.; 
-
-    for(int i=0; i<nor_pc->points.size(); i++){
-        pcl::PointXYZI& npt = nor_pc->points[i];
-        pcl::PointXYZI& pt = pc->points[i];
-
-        npt.x = pt.x * zoom_z / pt.z; 
-        npt.y = pt.y * zoom_z / pt.z;
-        npt.intensity = pt.z; 
-        npt.z = zoom_z; 
-    }
-
-    static boost::shared_ptr<pcl::KdTreeFLANN<pcl::PointXYZI> > kdtree(new pcl::KdTreeFLANN<pcl::PointXYZI>); 
-    kdtree->setInputCloud(nor_pc);
-
-    // x, y, z, p_u, p_v, velocity_x, velocity_y;
-    map<int, vector<pair<int, Eigen::Matrix<double, 7, 1>>>>::iterator it = featureFrame.begin(); 
-    pcl::PointXYZI ips; 
-    
-    while(it != featureFrame.end()){
-
-        float nor_ui = it->second[0].second(0); 
-        float nor_vi = it->second[0].second(1); 
-        float ui = it->second[0].second(3); 
-        float vi = it->second[0].second(4);  
-
-        float d = (float)dpt.at<unsigned short>(std::round(vi), std::round(ui)) * 0.001;
-
-        if(d < 0.2) {
-            it++;
-            continue; 
-        }
-
-        ips.x = nor_ui * zoom_z; 
-        ips.y = nor_vi * zoom_z; 
-        ips.z = zoom_z;  
-
-        // for kd search 
-        std::vector<int> pointSearchInd;
-        std::vector<float> pointSearchSqrDis;
-
-        kdtree->nearestKSearch(ips, 3, pointSearchInd, pointSearchSqrDis); 
-        double minDepth, maxDepth; 
-        if(pointSearchSqrDis[0] < 0.3 && pointSearchInd.size() == 3)
-        {
-            pcl::PointXYZI depthPoint = nor_pc->points[pointSearchInd[0]];
-            double x1 = depthPoint.x * depthPoint.intensity / zoom_z;
-            double y1 = depthPoint.y * depthPoint.intensity / zoom_z;
-            double z1 = depthPoint.intensity;
-            minDepth = z1;
-            maxDepth = z1;
-
-            depthPoint = nor_pc->points[pointSearchInd[1]];
-            double x2 = depthPoint.x * depthPoint.intensity / zoom_z;
-            double y2 = depthPoint.y * depthPoint.intensity / zoom_z;
-            double z2 = depthPoint.intensity;
-            minDepth = (z2 < minDepth)? z2 : minDepth;
-            maxDepth = (z2 > maxDepth)? z2 : maxDepth;
-
-            depthPoint = nor_pc->points[pointSearchInd[2]];
-            double x3 = depthPoint.x * depthPoint.intensity / zoom_z;
-            double y3 = depthPoint.y * depthPoint.intensity / zoom_z;
-            double z3 = depthPoint.intensity;
-            minDepth = (z3 < minDepth)? z3 : minDepth;
-            maxDepth = (z3 > maxDepth)? z3 : maxDepth;
-
-            double u = nor_ui;
-            double v = nor_vi;
-
-            // intersection point between direction of OP and the Plane formed by [P1, P2, P3]
-            double s = (x1*y2*z3 - x1*y3*z2 - x2*y1*z3 + x2*y3*z1 + x3*y1*z2 - x3*y2*z1) 
-            / (x1*y2 - x2*y1 - x1*y3 + x3*y1 + x2*y3 - x3*y2 + u*y1*z2 - u*y2*z1
-                - v*x1*z2 + v*x2*z1 - u*y1*z3 + u*y3*z1 + v*x1*z3 - v*x3*z1 + u*y2*z3 
-                - u*y3*z2 - v*x2*z3 + v*x3*z2);
-
-            // check the validity of the depth measurement 
-            if(maxDepth - minDepth > 2) // lie on an edge or noisy point? 
-            {   
-                s = -1; 
-            }else if(s - maxDepth > 0.2)
-            {
-                s = maxDepth; 
-            }else if(s - minDepth < - 0.2)
-            {
-                s = minDepth; 
-            }
-            it->second[0].second(2) = s;
-        }
-
-        it++;
-
-    }
     return ; 
 }
 

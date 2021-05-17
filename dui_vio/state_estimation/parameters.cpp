@@ -43,6 +43,9 @@ double FREQ;
 
 double nG = -9.8; 
 
+bool USE_GMM = true; // whether use gmm to compute covariance 
+bool USE_GMM_EXT = true; // whether extend gmm by introducing similarity 
+
 template <typename T>
 T readParam(ros::NodeHandle &n, std::string name)
 {
@@ -75,6 +78,8 @@ void readParameters(ros::NodeHandle &n)
     }
 
     n.param("nG_norm", nG, nG); 
+    n.param("use_gmm", USE_GMM, USE_GMM); 
+    n.param("use_gmm_ext", USE_GMM_EXT, USE_GMM_EXT); 
 
     // VINS_FOLDER_PATH = readParam<std::string>(n, "vins_folder");
     fsSettings["image_topic"] >> IMAGE_TOPIC;

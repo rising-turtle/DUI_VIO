@@ -20,10 +20,13 @@ endif(COMMAND cmake_policy)
 
 # rosbuild_init()
 
+option(WITH_OPENGV "use opengv" ON) #use opengv or not in hybridPnP 
+
 #set the default path for built executables to the "bin" directory
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 #set the default path for built libraries to the "lib" directory
 set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
+
 
 # set(OpenCV_DIR "/home/davidz/work/3rdlibs/OpenCV-2.4.10/build")
 find_package(OpenCV REQUIRED)
@@ -59,6 +62,17 @@ include_directories(${catkin_INCLUDE_DIRS})
 find_package(Ceres REQUIRED)
 include_directories(${CERES_INCLUDE_DIRS})
 
+
+if(WITH_OPENGV)
+    add_definitions(-DUSE_OPENGV)
+    #### opengv ####    
+    set(opengv_DIR "/home/davidz/work/3rdlib/opengv/build")
+    MESSAGE(STATUS "USE_OPENGV ")
+    find_package(opengv REQUIRED
+        PATHS ${opengv_DIR})
+    include_directories("${opengv_DIR}/../include")
+endif()
+
 # add_subdirectory(isamlib)
 # link_libraries(isamlib)
 # link_libraries(${CERES_LIBRARIES})
@@ -88,7 +102,11 @@ add_library(dui_vio state_estimation/dui_vio.cpp state_estimation/dui_vio_init.c
             initialization/solve_opt.cpp initialization/translate_factor.cpp
             initialization/gmm_model.cpp feature_tracking/feature_tracker.cpp)
 
-target_link_libraries(dui_vio ${CERES_LIBRARIES} ${catkin_LIBRARIES} ${OpenCV_LIBS})
+if(WITH_OPENGV)
+    target_link_libraries(dui_vio ${CERES_LIBRARIES} ${catkin_LIBRARIES} ${OpenCV_LIBS} opengv)
+else()
+    target_link_libraries(dui_vio ${CERES_LIBRARIES} ${catkin_LIBRARIES} ${OpenCV_LIBS})
+endif()
 
 ## feature node 
 add_executable(feature_tracker_node feature_tracking/feature_tracker_node.cpp )

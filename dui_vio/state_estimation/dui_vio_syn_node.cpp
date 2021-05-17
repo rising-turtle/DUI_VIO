@@ -51,9 +51,6 @@ bool init_feature = 0;
 bool init_imu = 1;
 double last_imu_t = 0;
 
-// double nG = -9.8; 
-
-
 sensor_msgs::Image::ConstPtr getDptImage(double timestamp)
 {
     ROS_WARN("dui_vio_syn_node.cpp: try to find out dpt img at %lf", timestamp); 
@@ -265,12 +262,18 @@ void process()
                     img.encoding = "mono16";
                     // ptr = cv_bridge::toCvCopy(img, sensor_msgs::image_encodings::MONO16);
                     cv_bridge::CvImageConstPtr ptr = cv_bridge::toCvCopy(img, sensor_msgs::image_encodings::MONO16);
-                    // dui_vio.associateDepthSimple(image, ptr->image); 
-                    dui_vio.associateDepthGMM(image, ptr->image); 
+                    if(!USE_GMM){
+                        dui_vio.associateDepthSimple(image, ptr->image); 
+                    }else{
+                        dui_vio.associateDepthGMM(image, ptr->image, USE_GMM_EXT); 
+                    }
                 }else{
                     cv_bridge::CvImageConstPtr ptr = cv_bridge::toCvCopy(dpt_ptr, sensor_msgs::image_encodings::MONO16);
-                    // dui_vio.associateDepthSimple(image, ptr->image); 
-                    dui_vio.associateDepthGMM(image, ptr->image); 
+                    if(!USE_GMM){
+                        dui_vio.associateDepthSimple(image, ptr->image); 
+                    }else{
+                        dui_vio.associateDepthGMM(image, ptr->image, USE_GMM_EXT); 
+                    }
                 }
             }
 

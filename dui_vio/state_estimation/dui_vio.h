@@ -111,10 +111,9 @@ public:
     bool IMUAvailable(double t);
     bool getIMUInterval(double t0, double t1, vector<pair<double, Eigen::Vector3d>> &accVector, 
                                 vector<pair<double, Eigen::Vector3d>> &gyrVector);
-    // void inputRGBD(double t, cv::Mat& rgb, cv::Mat& dpt);
-    void associateDepth(map<int, vector<pair<int, Eigen::Matrix<double, 7, 1>>>>& featureFrame, cv::Mat& dpt);
+
     void associateDepthSimple(map<int, vector<pair<int, Eigen::Matrix<double, 10, 1>>>>& featureFrame, const cv::Mat& dpt);
-    void associateDepthGMM(map<int, vector<pair<int, Eigen::Matrix<double, 10, 1>>>>& featureFrame, const cv::Mat& dpt);
+    void associateDepthGMM(map<int, vector<pair<int, Eigen::Matrix<double, 10, 1>>>>& featureFrame, const cv::Mat& dpt, bool use_sim=true);
 
     // queue<double> curr_pctime_buf; 
     // queue<boost::shared_ptr<pcl::PointCloud<pcl::PointXYZI> > > curr_pc_buf;
