@@ -84,6 +84,7 @@ void GlobalSFM::triangulateTwoFramesWithDepth(int frame0, Eigen::Matrix<double, 
 	Matrix3d Pose1_R = Pose1.block< 3,3 >(0,0);
 	Vector3d Pose0_t = Pose0.block< 3,1 >(0,3);
 	Vector3d Pose1_t = Pose1.block< 3,1 >(0,3);
+	int cnt_valid = 0; 
 	for (int j = 0; j < feature_num; j++)
 	{
 		if (sfm_f[j].state == true)
@@ -133,6 +134,10 @@ void GlobalSFM::triangulateTwoFramesWithDepth(int frame0, Eigen::Matrix<double, 
 					sfm_f[j].position[0] = point_3d(0);
 					sfm_f[j].position[1] = point_3d(1);
 					sfm_f[j].position[2] = point_3d(2);
+					++cnt_valid;
+					cout<<"good case, residual: "<<residual.transpose()<<" norm "<<residual.norm()*460<<endl;
+				}else{
+					cout<<"bad case, residual: "<<residual.transpose()<<" norm "<<residual.norm()*460<<endl;
 				}
 			}else if(point1.z() > 0.1){
 				Vector3d point_3d, point1_reprojected;
@@ -154,11 +159,13 @@ void GlobalSFM::triangulateTwoFramesWithDepth(int frame0, Eigen::Matrix<double, 
 					sfm_f[j].position[0] = point_3d(0);
 					sfm_f[j].position[1] = point_3d(1);
 					sfm_f[j].position[2] = point_3d(2);
+					++cnt_valid;
 				}
 			}
 			//cout << "trangulated : " << frame1 << "  3d point : "  << j << "  " << point_3d.transpose() << endl;
 		}
 	}
+	cout<<"cnt_valid sfm features: "<<cnt_valid<<" failed feature number: "<<feature_num - cnt_valid<<endl; 
 }
 
 

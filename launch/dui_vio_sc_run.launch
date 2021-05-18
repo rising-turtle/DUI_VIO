@@ -10,7 +10,7 @@
   	<param name="config_file" type="string" value="$(arg config_file)"/>
   	<param name="nG_norm" type="double" value="-9.81"/>
   	<param name="use_gmm" type="bool" value="true"/>
-  	<param name="use_gmm_ext" type="bool" value="false"/>
+  	<param name="use_gmm_ext" type="bool" value="true"/>
   </node> 
 
   <node launch-prefix="nice" pkg="rviz" type="rviz" name="rviz" args="-d $(find dui_vio)/../config/rviz_config_init.rviz"/>

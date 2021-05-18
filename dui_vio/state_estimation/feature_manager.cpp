@@ -338,21 +338,7 @@ bool FeatureManager::addFeatureCheckParallaxSigma(int frame_count, const map<int
             return it.feature_id == feature_id;
                           });
 
-        // if (it == feature.end())
-        // {
-        //     feature.push_back(FeaturePerId(feature_id, frame_count));
-        //     feature.back().feature_per_frame.push_back(f_per_fra);
-        //     new_feature_num++;
-        // }
-        // else if (it->feature_id == feature_id)
-        // {
-        //     it->feature_per_frame.push_back(f_per_fra);
-        //     last_track_num++;
-        //     if( it-> feature_per_frame.size() >= 4)
-        //         long_track_num++;
-        // }
-
-        // matrix<7,1> // x, y, z, p_u, p_v, velocity_x, velocity_y;
+        // matrix<10,1> // x, y, z, p_u, p_v, velocity_x, velocity_y, lambda, std_depth, std_lambda
         float nor_ui = id_pts.second[0].second(0); 
         float nor_vi = id_pts.second[0].second(1); 
         float zi = id_pts.second[0].second(2);
@@ -374,44 +360,23 @@ bool FeatureManager::addFeatureCheckParallaxSigma(int frame_count, const map<int
                     feature.back().setDepth(1./lambda_i);
                 else
                     feature.back().setDepth(zi);
-                // feature.back().setAllD(zi, lambda_i, sig_d, sig_l);
                 feature.back().depth_shift = 0;
                 feature.back().dpt_type = DEPTH_MES; 
             }
-            // feature.back().feature_per_frame.push_back(FeaturePerFrame(nor_ui, nor_vi, depth));
             feature.back().feature_per_frame.push_back(f_per_fra);
             new_feature_num++;
 
         }else if(it->feature_id == feature_id){ // old tracked feature 
 
-            // add DEPTH 
-            // if(vp.v == ip_M::DEPTH_MES){
             it->feature_per_frame.push_back(f_per_fra); 
-            if(zi > 0){
-                /*
-                // This line below makes it different from VINS-Fusion in intialization 
-                if(it->estimated_depth <= 0 || (it->dpt_type != DEPTH_MES && it->estimated_depth > zi)){
-                // if(it->estimated_depth <= 0 || (it->estimated_depth > zi)){
-                // if(it->estimated_depth <= 0 ){
-                     if(lambda_i > 0 && sig_l > 0)
-                        it->estimated_depth = 1./lambda_i;
-                     else
-                        it->estimated_depth = zi; //vp.s; 
-                     it->depth_shift = it->feature_per_frame.size() -1; 
-                }*/
-            }
-
             last_track_num++;
             if( it-> feature_per_frame.size() >= 4)
                 long_track_num++;
         }   
 
-
     }
 
     ROS_INFO("after addFeatureCheckParallax num of feature: %d last_track_num: %d", getFeatureCount(), last_track_num);
-    //if (frame_count < 2 || last_track_num < 20)
-    //if (frame_count < 2 || last_track_num < 20 || new_feature_num > 0.5 * last_track_num)
     if (frame_count < 2 || last_track_num < 20 || long_track_num < 40 || new_feature_num > 0.5 * last_track_num)
         return true; // margin old 
 
@@ -437,195 +402,6 @@ bool FeatureManager::addFeatureCheckParallaxSigma(int frame_count, const map<int
         return parallax_sum / parallax_num >= MIN_PARALLAX;
     }   
 }
-
-bool FeatureManager::addFeatureCheckParallax(int frame_count, const map<int, vector<pair<int, Eigen::Matrix<double, 7, 1>>>> &image)
-{
-    ROS_DEBUG("input feature: %d", (int)image.size());
-    ROS_WARN("before addFeatureCheckParallax num of feature: %d total feature num: %d", getFeatureCount(), feature.size());
-    double parallax_sum = 0;
-    int parallax_num = 0;
-    last_track_num = 0;
-    last_average_parallax = 0;
-    new_feature_num = 0;
-    long_track_num = 0;
-    for (auto &id_pts : image)
-    {
-        assert(id_pts.second[0].first == 0);
-
-        int feature_id = id_pts.first;
-        auto it = find_if(feature.begin(), feature.end(), [feature_id](const FeaturePerId &it)
-                          {
-            return it.feature_id == feature_id;
-                          });
-
-        // if (it == feature.end())
-        // {
-        //     feature.push_back(FeaturePerId(feature_id, frame_count));
-        //     feature.back().feature_per_frame.push_back(f_per_fra);
-        //     new_feature_num++;
-        // }
-        // else if (it->feature_id == feature_id)
-        // {
-        //     it->feature_per_frame.push_back(f_per_fra);
-        //     last_track_num++;
-        //     if( it-> feature_per_frame.size() >= 4)
-        //         long_track_num++;
-        // }
-
-        // matrix<7,1> // x, y, z, p_u, p_v, velocity_x, velocity_y;
-        float nor_ui = id_pts.second[0].second(0); 
-        float nor_vi = id_pts.second[0].second(1); 
-        float zi = id_pts.second[0].second(2);
-        float ui = id_pts.second[0].second(3); 
-        float vi = id_pts.second[0].second(4); 
-
-        // if(feature_id == 196 || feature_id == 226)
-        //    cout<<" feature id: "<<feature_id<<" nor_ui: "<<nor_ui<<" nor_vi: "<<nor_vi<<" ui: "<<ui<<" vi: "<<vi<<" zi: "<<zi<<endl;
-
-        FeaturePerFrame f_per_fra(nor_ui, nor_vi, zi); 
-
-        if(it == feature.end()){ // new feature 
-            feature.push_back(FeaturePerId(feature_id, frame_count));
-            if(zi > 0){
-                feature.back().setDepth(zi);
-                feature.back().depth_shift = 0;
-                feature.back().dpt_type = DEPTH_MES; 
-            }
-            // feature.back().feature_per_frame.push_back(FeaturePerFrame(nor_ui, nor_vi, depth));
-            feature.back().feature_per_frame.push_back(f_per_fra);
-            new_feature_num++;
-
-        }else if(it->feature_id == feature_id){ // old tracked feature 
-
-            // add DEPTH 
-            // if(vp.v == ip_M::DEPTH_MES){
-            it->feature_per_frame.push_back(f_per_fra); 
-            if(zi > 0){
-
-                // This line below makes it different from VINS-Fusion in intialization 
-                if(it->estimated_depth <= 0 || (it->dpt_type != DEPTH_MES && it->estimated_depth > zi)){
-                // if(it->estimated_depth <= 0 || (it->estimated_depth > zi)){
-                // if(it->estimated_depth < 0 ){
-                     it->estimated_depth = zi; //vp.s; 
-                     it->depth_shift = it->feature_per_frame.size() -1; 
-                }
-            }
-
-            last_track_num++;
-            if( it-> feature_per_frame.size() >= 4)
-                long_track_num++;
-        }   
-
-
-    }
-
-    ROS_INFO("after addFeatureCheckParallax num of feature: %d last_track_num: %d", getFeatureCount(), last_track_num);
-    //if (frame_count < 2 || last_track_num < 20)
-    //if (frame_count < 2 || last_track_num < 20 || new_feature_num > 0.5 * last_track_num)
-    if (frame_count < 2 || last_track_num < 20 || long_track_num < 40 || new_feature_num > 0.5 * last_track_num)
-        return true; // margin old 
-
-    for (auto &it_per_id : feature)
-    {
-        if (it_per_id.start_frame <= frame_count - 2 &&
-            it_per_id.start_frame + int(it_per_id.feature_per_frame.size()) - 1 >= frame_count - 1)
-        {
-            parallax_sum += compensatedParallax2(it_per_id, frame_count);
-            parallax_num++;
-        }
-    }
-
-    if (parallax_num == 0)
-    {
-        return true; // margin old 
-    }
-    else
-    {
-        ROS_DEBUG("parallax_sum: %lf, parallax_num: %d", parallax_sum, parallax_num);
-        ROS_DEBUG("current parallax: %lf", parallax_sum / parallax_num * FOCAL_LENGTH);
-        // last_average_parallax = parallax_sum / parallax_num * FOCAL_LENGTH;
-        return parallax_sum / parallax_num >= MIN_PARALLAX;
-    }
-}
-
-// bool FeatureManager::addFeatureCheckParallax(int frame_count, vector<ip_M>& vip)
-// {
-// 	double parallax_sum = 0;
-//     int parallax_num = 0;
-//     last_track_num = 0;
-//     last_average_parallax = 0;
-//     new_feature_num = 0;
-//     long_track_num = 0;
-
-// 	for(auto& vp : vip){
-		
-// 		FeaturePerFrame f_per_fra(vp.uj, vp.vj);
-
-// 		int feature_id = vp.ind; 
-// 		auto it = find_if(feature.begin(), feature.end(), [feature_id](const FeaturePerId& it){
-// 			return it.feature_id == feature_id;
-// 		});
-
-// 		if(it == feature.end()){ // new feature 
-// 			feature.push_back(FeaturePerId(feature_id, frame_count-1));
-// 			float depth = -1; 
-// 			if(vp.v == ip_M::DEPTH_MES){
-// 				depth = vp.s;
-// 				feature.back().setDepth(depth);
-//                 feature.back().setDepthType(DEPTH_MES);
-//                 feature.back().depth_shift = 0;
-// 			}
-// 			feature.back().feature_per_frame.push_back(FeaturePerFrame(vp.ui, vp.vi, depth));
-//             feature.back().feature_per_frame.push_back(f_per_fra);
-//             new_feature_num++;
-
-// 		}else if(it->feature_id == feature_id){ // old tracked feature 
-
-// 			// add DEPTH 
-// 			if(vp.v == ip_M::DEPTH_MES){
-//                 it->feature_per_frame.back().setDepth(vp.s); 
-//                 if(it->estimated_depth < 0 || (it->estimated_depth > vp.s)){
-//                     it->estimated_depth = vp.s; 
-//                     it->depth_shift = it->feature_per_frame.size()-1 ; 
-//                     it->setDepthType(DEPTH_MES);
-//                 }
-//             }
-
-// 			it->feature_per_frame.push_back(f_per_fra); 
-// 			last_track_num++;
-//             if( it-> feature_per_frame.size() >= 4)
-//                 long_track_num++;
-// 		}	
-
-// 	}
-
-//     if (frame_count < 2 || last_track_num < 20 || new_feature_num > 0.5 * last_track_num)
-// 	// if (frame_count < 2 || last_track_num < 20 || long_track_num < 40 || new_feature_num > 0.5 * last_track_num)
-//     	return true;
-
-//     for (auto &it_per_id : feature)
-//     {
-//         if (it_per_id.start_frame <= frame_count - 2 &&
-//             it_per_id.start_frame + int(it_per_id.feature_per_frame.size()) - 1 >= frame_count - 1)
-//         {
-//             parallax_sum += compensatedParallax2(it_per_id, frame_count);
-//             parallax_num++;
-//         }
-//     }
-
-//     if (parallax_num == 0)
-//     {
-//         return true;
-//     }
-    
-    
-//     ROS_DEBUG("parallax_sum: %lf, parallax_num: %d", parallax_sum, parallax_num);
-//     ROS_DEBUG("current parallax: %lf", parallax_sum / parallax_num * FOCAL_LENGTH);
-//         // last_average_parallax = parallax_sum / parallax_num * FOCAL_LENGTH;
-//     return ((parallax_sum / parallax_num) >= MIN_PARALLAX);
-// }
-
-
 
 void FeatureManager::triangulatePoint(Eigen::Matrix<double, 3, 4> &Pose0, Eigen::Matrix<double, 3, 4> &Pose1,
                         Eigen::Vector2d &point0, Eigen::Vector2d &point1, Eigen::Vector3d &point_3d)
@@ -1055,11 +831,16 @@ void FeatureManager::triangulateWithDepth(Vector3d Ps[], Vector3d tic[], Matrix3
             if (residual.norm() < 2.0 / 460) {//this can also be adjust to improve performance
                 // Eigen::Vector3d point_r = R2r * point0 + t2r;
                 verified_depths.push_back(point1_projected.z());
+                // 
+            }else{
+                cout <<" residual is: "<<residual.transpose()<<" norm: "<<residual.norm()<<endl; 
             }
         }
 
         if (verified_depths.size() == 0)
             continue;
+        if(verified_depths.size() >= 2)
+            ROS_DEBUG("yeah, there is some valid 3d feature match!");
         double depth_sum = std::accumulate(std::begin(verified_depths),std::end(verified_depths),0.0);
         double depth_ave = depth_sum / verified_depths.size();
 //        for (int i=0;i<(int)verified_depths.size();i++){
@@ -1078,6 +859,8 @@ void FeatureManager::triangulateWithDepth(Vector3d Ps[], Vector3d tic[], Matrix3
             it_per_id.solve_flag = 1;
             it_per_id.dpt_type = DEPTH_MES; // actually averaged estimation
             it_per_id.depth_shift = 0; 
+            // ROS_DEBUG("feature id: %d measured depth: %f estimated_depth: %f", it_per_id.feature_id, it_per_id.feature_per_frame[0].dpt,
+            //    it_per_id.estimated_depth);
         }
 
     }

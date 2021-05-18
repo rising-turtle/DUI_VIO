@@ -142,9 +142,6 @@ public:
     vector<pair<Vector3d, Vector3d>> getCorrespondingWithDepth(int frame_count_l, int frame_count_r);
     pair<vector<pair<Vector3d, Vector3d>>, vector<Vector3d>> getCorrespondingWithDepthAndCov(int frame_count_l, int frame_count_r);
 
-	// bool addFeatureCheckParallax(int frame_id, vector<struct ip_M>& vip); 
-    bool addFeatureCheckParallax(int frame_count, const map<int, vector<pair<int, Eigen::Matrix<double, 7, 1>>>> &image);
-    // bool addFeatureCheckParallax(int frame_id, vector<struct ip_M>& vip); 
     bool addFeatureCheckParallaxSigma(int frame_count, const map<int, vector<pair<int, Eigen::Matrix<double, 10, 1>>>> &image);
 
 

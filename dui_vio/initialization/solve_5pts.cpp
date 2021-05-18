@@ -321,18 +321,16 @@ bool MotionEstimator::solveRelativeHybrid(const vector<pair<Vector3d, Vector3d>>
         // if use opengv to refine the rotation 
 #ifdef USE_OPENGV
 
-        // cout<<"before opengv R: "<<endl<<R<<endl; 
+        cout<<"before opengv R: "<<endl<<R<<endl; 
 
         Eigen::Matrix3d Rij_e = R;
 
         opengv::bearingVectors_t bearingVectors1; 
         opengv::bearingVectors_t bearingVectors2;
 
-        for(int j=0; j<inliers.size(); j++){
-            Vector3d pi = inliers[j].first;
-            pi(0) = pi(0)*pi(2); 
-            pi(1) = pi(1)*pi(2);  
-            Vector3d pj = inliers[j].second; 
+        for(int j=0; j<corres.size(); j++){
+            Vector3d pi(corres[j].first(0), corres[j].first(1), 1.); 
+            Vector3d pj(corres[j].second(0), corres[j].second(1), 1.);
             bearingVectors1.push_back(pi/pi.norm());
             bearingVectors2.push_back(pj/pj.norm()); 
         }
@@ -344,7 +342,7 @@ bool MotionEstimator::solveRelativeHybrid(const vector<pair<Vector3d, Vector3d>>
 
         // first use eight pts to compute initial rotation 
         R =  opengv::relative_pose::eigensolver(adapter_rbs);       
-        // cout <<"after opengv R: "<<endl<<R<<endl; 
+        cout <<"after opengv R: "<<endl<<R<<endl; 
 #endif
 
         if(inlier_cnt > 12 && inliers.size() >= 5){

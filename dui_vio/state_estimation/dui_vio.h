@@ -70,11 +70,8 @@ public:
 
     void processIMU(double dt, Eigen::Vector3d & linear_acceleration, Eigen::Vector3d& angular_velocity); 
 
-    // virtual void processImage(sensor_msgs::PointCloud2ConstPtr& );
-    virtual void processImage(const map<int, vector<pair<int, Eigen::Matrix<double, 7, 1>>>> &image, const double header);
     void processDepthCloud(sensor_msgs::PointCloud2ConstPtr& );
     boost::shared_ptr<pcl::PointCloud<pcl::PointXYZI> > processDepthImage(cv::Mat& dpt_img);
-    void processMeasurements();
 
     // void solveOdometry(vector<ip_M>& , bool use_floor_plane = false); 
     virtual void solveOdometry(); 

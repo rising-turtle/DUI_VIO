@@ -68,8 +68,6 @@ bool DUI_VIO::initialStructure()
     Matrix3d relative_R;
     Vector3d relative_T;
     int l;
-    // if (!relativePose(relative_R, relative_T, l))
-    // if(!relativePoseHybrid(relative_R, relative_T, l))
     if(!relativePoseHybridCov(relative_R, relative_T, l))
     {
         ROS_INFO("Not enough features or parallax; Move device around");
@@ -201,9 +199,9 @@ bool DUI_VIO::visualInitialAlignWithDepth()
         TIC_TMP[i].setZero();
     ric[0] = RIC[0];
     f_manager.setRic(ric);
-    //f_manager.triangulate(Ps, &(TIC_TMP[0]), &(RIC[0]));
+    // f_manager.triangulate(Ps, Rs, &(TIC_TMP[0]), &(RIC[0]));
+    // f_manager.triangulateSimple(WINDOW_SIZE, Ps, Rs, &(TIC_TMP[0]), &(RIC[0]));
     f_manager.triangulateWithDepth(Ps, &(TIC_TMP[0]), &(RIC[0]));
-
 
     // do repropagate here
     for (int i = 0; i <= WINDOW_SIZE; i++)

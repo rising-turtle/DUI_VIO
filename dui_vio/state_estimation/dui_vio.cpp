@@ -234,75 +234,6 @@ void DUI_VIO::initFirstIMUPose(vector<pair<double, Eigen::Vector3d>> &accVector)
     //Vs[0] = Vector3d(5, 0, 0);
 }
 
-void DUI_VIO::processMeasurements()
-{
-    // while(1){
-        pair<double, map<int, vector<pair<int, Eigen::Matrix<double, 7, 1>>>> > feature; 
-        vector<pair<double, Eigen::Vector3d>> accVector, gyrVector; 
-
-        if(!featureBuf.empty()){
-
-            feature = featureBuf.front(); 
-            currTime = feature.first; // + td
-            // get imu 
-            while(1){
-                if(IMUAvailable(feature.first)){
-                    break; 
-                }else{
-                    std::chrono::milliseconds dura(7); 
-                    std::this_thread::sleep_for(dura);
-                }
-            }
-
-            m_buf.lock();
-                getIMUInterval(prevTime, currTime, accVector, gyrVector); 
-                featureBuf.pop(); 
-            m_buf.unlock(); 
-
-            if(!mbInitFirstPoseFlag){
-                initFirstIMUPose(accVector); 
-            }
-            for(int i=0; i<accVector.size(); i++){
-                double dt; 
-                if(i == 0)
-                    dt = accVector[0].first - prevTime; 
-                else if( i == accVector.size() - 1)
-                    dt = currTime - accVector[i-1].first;
-                else 
-                    dt = accVector[i].first - accVector[i-1].first; 
-                processIMU( dt, accVector[i].second, gyrVector[i].second); 
-            }
-
-            m_process.lock(); 
-            processImage(feature.second, feature.first); 
-
-            // debug initialization, now test it in the syn node 
-            // processImage_Init(feature.second, feature.first); 
-
-            prevTime = currTime; 
-
-            std_msgs::Header header; 
-            header.frame_id = "world"; 
-            header.stamp = ros::Time(feature.first); 
-
-            // TODO: pub odometry, keypose, camera pose, point cloud, keyframe, tf 
-
-            pubOdometry(*this, header);
-            // pubKeyPoses(*this, header);
-            // pubCameraPose(*this, header);
-            // pubPointCloud(*this, header);
-            // pubKeyframe(*this);
-            // pubTF(*this, header);
-
-            m_process.unlock(); 
-            ROS_INFO("DUI_VIO.cpp: ok arrive here frame_count: %d", frame_count);
-        }
-        // std::chrono::milliseconds dura(2);
-        // std::this_thread::sleep_for(dura);
-    // }
-}
-
-
 
 void DUI_VIO::inputIMU(double t, Vector3d& acc, Vector3d& gyr)
 {
@@ -483,12 +414,10 @@ void DUI_VIO::setParameter()
     m_process.unlock(); 
 }
 
-// void DUI_VIO::processImage_Init(const map<int, vector<pair<int, Eigen::Matrix<double, 7, 1>>>> &image, const double header)
 void DUI_VIO::processImage_Init(const map<int, vector<pair<int, Eigen::Matrix<double, 10, 1>>>> &image, const double header)
 {
     ROS_DEBUG("timestamp %lf with feature points %lu", header, image.size());
 
-    // if(f_manager.addFeatureCheckParallax(frame_count, image))
     if(f_manager.addFeatureCheckParallaxSigma(frame_count, image))
         marginalization_flag = MARGIN_OLD;
     else
@@ -512,7 +441,6 @@ void DUI_VIO::processImage_Init(const map<int, vector<pair<int, Eigen::Matrix<do
             }
             tV.push_back(make_pair(it->second[i].first, tM)); 
         }
-        //tmp_image[it->first] = tV; 
         tmp_image.emplace(it->first, tV); 
         it++; 
     }
@@ -577,120 +505,6 @@ void DUI_VIO::processImage_Init(const map<int, vector<pair<int, Eigen::Matrix<do
         last_P0 = Ps[0]; 
     }
     return ; 
-}
-
-
-
-void DUI_VIO::processImage(const map<int, vector<pair<int, Eigen::Matrix<double, 7, 1>>>> &image, const double header)
-{
-    ROS_DEBUG("timestamp %lf with feature points %lu", header, image.size());
-    if (f_manager.addFeatureCheckParallax(frame_count, image))
-    {
-        marginalization_flag = MARGIN_OLD;
-        //printf("keyframe\n");
-    }
-    else
-    {
-        marginalization_flag = MARGIN_SECOND_NEW;
-        //printf("non-keyframe\n");
-    }
-
-    // Initialization and optimization
-    ROS_INFO("handle frame at timstamp %lf is a %s", header, marginalization_flag ? "Non-keyframe" : "Keyframe");
-    ROS_DEBUG("Solving %d", frame_count);
-    ROS_INFO("at timestamp: %lf number of feature: %d", header, f_manager.getFeatureCount());
-    Headers[frame_count] = header;
-
-    if(solver_flag == INITIAL){
-
-        // only for initialization 
-        ImageFrame imageframe(image, header);
-        imageframe.pre_integration = tmp_pre_integration;
-        all_image_frame.insert(make_pair(header, imageframe));
-        tmp_pre_integration = new IntegrationBase{acc_0, gyr_0, Bas[frame_count], Bgs[frame_count]};
-
-        f_manager.initFramePoseByPnP(frame_count, Ps, Rs, tic, ric); 
-        // f_manager.triangulate(frame_count, Ps, Rs, tic, ric);
-        f_manager.triangulateSimple(frame_count, Ps, Rs, tic, ric);
-
-        if(frame_count == WINDOW_SIZE){
-            map<double, ImageFrame>::iterator frame_it;
-            int i = 0;
-            for (frame_it = all_image_frame.begin(); frame_it != all_image_frame.end(); frame_it++)
-            {
-                frame_it->second.R = Rs[i];
-                frame_it->second.T = Ps[i];
-                i++;
-            }
-            solveGyroscopeBias(all_image_frame, Bgs);
-            for (int i = 0; i <= WINDOW_SIZE; i++)
-            {
-                pre_integrations[i]->repropagate(Vector3d::Zero(), Bgs[i]);
-            }
-            // optimization();
-            solveOdometry();
-            // solveOdometryProj(); 
-            // updateLatestStates();
-            solver_flag = NON_LINEAR;
-            slideWindow();
-            ROS_INFO("Initialization finish!");
-            showStatus();
-        }
-
-        if(frame_count < WINDOW_SIZE)
-        {
-            frame_count++;
-            int prev_frame = frame_count - 1;
-            Ps[frame_count] = Ps[prev_frame];
-            Vs[frame_count] = Vs[prev_frame];
-            Rs[frame_count] = Rs[prev_frame];
-            Bas[frame_count] = Bas[prev_frame];
-            Bgs[frame_count] = Bgs[prev_frame];
-        }
-    }else{
-        // f_manager.triangulate(frame_count, Ps, Rs, tic, ric);
-        // optimization();
-        f_manager.triangulateSimple(frame_count, Ps, Rs, tic, ric);
-        solveOdometry(); 
-        // solveOdometryProj();
-        set<int> removeIndex;
-        outliersRejection(removeIndex);
-        cout<<"before removeoutlier, number of features: "<<f_manager.getFeatureCount()<<endl; 
-        
-        f_manager.removeOutlier(removeIndex);
-
-        cout<<"after removeoutlier, number of features: "<<f_manager.getFeatureCount()<<endl; 
-        // if (! MULTIPLE_THREAD)
-        {
-            // mFeatureTracker.removeOutliers(removeIndex);
-            // predictPtsInNextFrame();
-        }
-
-        // if (failureDetection())
-        // {
-        //     ROS_WARN("failure detection!");
-        //     failure_occur = 1;
-        //     clearState();
-        //     setParameter();
-        //     ROS_WARN("system reboot!");
-        //     return;
-        // }
-
-        // cout<<"before slidewindow, number of features: "<<f_manager.getFeatureCount()<<endl; 
-        slideWindow();
-        // cout<<"after slidewindow, number of features: "<<f_manager.getFeatureCount()<<endl;
-        f_manager.removeFailures();
-        // cout<<"after removeFailures, number of features: "<<f_manager.getFeatureCount()<<endl; 
-        // prepare output of VINS
-        key_poses.clear();
-        for (int i = 0; i <= WINDOW_SIZE; i++)
-            key_poses.push_back(Ps[i]);
-
-        last_R = Rs[WINDOW_SIZE];
-        last_P = Ps[WINDOW_SIZE];
-        last_R0 = Rs[0];
-        last_P0 = Ps[0];
-    }    
 }
 
 void DUI_VIO::predictPtsInNextFrame()
