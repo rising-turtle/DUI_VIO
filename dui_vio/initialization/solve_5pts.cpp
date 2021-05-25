@@ -338,6 +338,9 @@ bool MotionEstimator::solveRelativeHybrid(const vector<pair<Vector3d, Vector3d>>
         // cout<<"before opengv R: "<<endl<<R<<endl; 
         std::vector<pair<Vector3d, Vector3d>> inliers_2d = getInliers2D(corres, mask);
 
+	 // ofstream ouf("matched_inliers.log"); 
+	 
+
         Eigen::Matrix3d Rij_e = R;
 
         opengv::bearingVectors_t bearingVectors1; 
@@ -348,6 +351,8 @@ bool MotionEstimator::solveRelativeHybrid(const vector<pair<Vector3d, Vector3d>>
             Vector3d pj(inliers_2d[j].second(0), inliers_2d[j].second(1), 1.);
             bearingVectors1.push_back(pi/pi.norm());
             bearingVectors2.push_back(pj/pj.norm()); 
+	     // ouf<<inliers_2d[j].first(0)<<" "<< inliers_2d[j].first(1)<<" "<<inliers_2d[j].first(2)<<" "<<
+	// 	inliers_2d[j].second(0)<<" "<< inliers_2d[j].second(1)<<" "<<inliers_2d[j].second(2)<<endl; 
         }
 
         opengv::relative_pose::CentralRelativeAdapter adapter_rbs(
