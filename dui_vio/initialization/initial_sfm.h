@@ -17,11 +17,12 @@ struct SFMFeature
 {
     bool state;
     int id;
-    vector<pair<int,Vector2d>> observation;
     double position[3];
     double depth;
 
+    vector<pair<int,Vector2d>> observation; // observed feature locations at different frames 
     vector<pair<int,double>> observation_depth; // observed depth measurement at different frames
+    vector<pair<int,double>> observation_depth_std; // observed depth measurement standard deviation at different frames 
 
 };
 
@@ -75,6 +76,8 @@ private:
 	void triangulateTwoFramesWithDepth(int frame0, Eigen::Matrix<double, 3, 4> &Pose0,
                                      int frame1, Eigen::Matrix<double, 3, 4> &Pose1,
                                      vector<SFMFeature> &sfm_f);
+	void triangulateTwoFramesWithDepthCov(int frame0,  Matrix<double, 3, 4> & Pose0, int frame1, 
+								Eigen::Matrix<double, 3, 4> & Pose1, vector <SFMFeature> & sfm_f);
 
 	int feature_num;
 };

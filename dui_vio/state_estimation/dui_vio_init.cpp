@@ -62,6 +62,7 @@ bool DUI_VIO::initialStructure()
             Vector3d pts_j = it_per_frame.pt;
             tmp_feature.observation.push_back(make_pair(imu_j, Eigen::Vector2d{pts_j.x(), pts_j.y()}));
             tmp_feature.observation_depth.push_back(make_pair(imu_j, it_per_frame.dpt)); // depth measurement
+            tmp_feature.observation_depth_std.push_back(make_pair(imu_j, it_per_frame.sig_d)); // std of depth measurement 
         }
         sfm_f.push_back(tmp_feature);
     } 
@@ -410,7 +411,7 @@ bool DUI_VIO::relativePoseHybridCov(Matrix3d &relative_R, Vector3d &relative_T, 
             {
                 l = i;
                 ROS_DEBUG("average_parallax %f choose l %d and newest frame to triangulate the whole structure", average_parallax * 460, l);
-                ROS_INFO("estimator.cpp: corres has %d pairs", corres.size());
+                // ROS_INFO("estimator.cpp: corres has %d pairs", corres.size());
                 return true;
             }
         }

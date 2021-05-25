@@ -199,6 +199,20 @@ namespace cv {
 
 namespace{
 
+vector<pair<Vector3d, Vector3d>> getInliers2D(const vector<pair<Vector3d, Vector3d>> &corres, cv::Mat& mask)
+{
+    assert(mask.rows == corres.size()); 
+
+    vector<pair<Vector3d, Vector3d>> ret;
+    for(int i=0; i<corres.size(); i++){
+
+        if(mask.at<unsigned char>(i,0) == 0) continue; 
+        
+        ret.push_back(make_pair(corres[i].first, corres[i].second)); 
+    } 
+    return ret; 
+}
+
 vector<pair<Vector3d, Vector3d>> getInliersWithValidDepth(const vector<pair<Vector3d, Vector3d>> &corres, cv::Mat& mask)
 {
     assert(mask.rows == corres.size()); 
@@ -311,26 +325,27 @@ bool MotionEstimator::solveRelativeHybrid(const vector<pair<Vector3d, Vector3d>>
         // with the speficied number of features 
         vector<pair<Vector3d, Vector3d>> inliers; 
 
+        // get rid of corres with invalid depth  
         if(pcov == NULL){
             inliers = getInliersWithValidDepth(corres, mask); 
         }else{
             inliers = getInliersWithValidDepthCov(corres, mask, *pcov); 
         }
 
-
         // if use opengv to refine the rotation 
 #ifdef USE_OPENGV
 
-        cout<<"before opengv R: "<<endl<<R<<endl; 
+        // cout<<"before opengv R: "<<endl<<R<<endl; 
+        std::vector<pair<Vector3d, Vector3d>> inliers_2d = getInliers2D(corres, mask);
 
         Eigen::Matrix3d Rij_e = R;
 
         opengv::bearingVectors_t bearingVectors1; 
         opengv::bearingVectors_t bearingVectors2;
 
-        for(int j=0; j<corres.size(); j++){
-            Vector3d pi(corres[j].first(0), corres[j].first(1), 1.); 
-            Vector3d pj(corres[j].second(0), corres[j].second(1), 1.);
+        for(int j=0; j<inliers_2d.size(); j++){
+            Vector3d pi(inliers_2d[j].first(0), inliers_2d[j].first(1), 1.); 
+            Vector3d pj(inliers_2d[j].second(0), inliers_2d[j].second(1), 1.);
             bearingVectors1.push_back(pi/pi.norm());
             bearingVectors2.push_back(pj/pj.norm()); 
         }
@@ -342,7 +357,7 @@ bool MotionEstimator::solveRelativeHybrid(const vector<pair<Vector3d, Vector3d>>
 
         // first use eight pts to compute initial rotation 
         R =  opengv::relative_pose::eigensolver(adapter_rbs);       
-        cout <<"after opengv R: "<<endl<<R<<endl; 
+        // cout <<"after opengv R: "<<endl<<R<<endl; 
 #endif
 
         if(inlier_cnt > 12 && inliers.size() >= 5){
@@ -354,8 +369,8 @@ bool MotionEstimator::solveRelativeHybrid(const vector<pair<Vector3d, Vector3d>>
             Rotation = R.transpose(); // Rotation is Rij
             Translation = -R.transpose() * T; // Translation is tij 
 
-            ROS_WARN("---------------5points----------------");
-            ROS_WARN("input points %d 2D inliers 3D inliers %d", ll.size(), inlier_cnt, inliers.size()); 
+            // ROS_WARN("---------------5points----------------");
+            ROS_WARN("input points %d 2D inliers %d 3D inliers %d", ll.size(), inlier_cnt, inliers.size()); 
 
             return true;
         }

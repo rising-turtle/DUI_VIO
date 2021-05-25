@@ -1,4 +1,5 @@
 #include "initial_sfm.h"
+#include "../state_estimation/feature_manager.h"
 
 GlobalSFM::GlobalSFM(){}
 
@@ -72,6 +73,177 @@ bool GlobalSFM::solveFrameByPnP(Matrix3d &R_initial, Vector3d &P_initial, int i,
 	R_initial = R_pnp;
 	P_initial = T_pnp;
 	return true;
+
+}
+
+void GlobalSFM::triangulateTwoFramesWithDepthCov(int frame0,  Matrix<double, 3, 4 > & Pose0, int frame1, 
+								Eigen::Matrix<double, 3, 4> & Pose1, vector<SFMFeature> & sfm_f)
+{
+	assert(frame0 != frame1);
+	Matrix3d Pose0_R = Pose0.block< 3,3 >(0,0);
+	Matrix3d Pose1_R = Pose1.block< 3,3 >(0,0);
+	Vector3d Pose0_t = Pose0.block< 3,1 >(0,3);
+	Vector3d Pose1_t = Pose1.block< 3,1 >(0,3);
+	int cnt_valid = 0; 
+	for (int j = 0; j < feature_num; j++)
+	{
+		if (sfm_f[j].state == true){
+			cnt_valid++;
+			continue;
+		}
+		bool has_0 = false, has_1 = false;
+		Vector3d point0;
+		Vector3d point1;
+		double std_z0 = 0; 
+		double std_z1 = 0; 
+		for (int k = 0; k < (int)sfm_f[j].observation.size(); k++)
+		{
+			if (sfm_f[j].observation[k].first == frame0)
+			{
+				point0 = Vector3d(sfm_f[j].observation[k].second.x(),sfm_f[j].observation[k].second.y(), sfm_f[j].observation_depth[k].second);	
+				has_0 = (point0.z() > 0.1); // true; 
+				std_z0 = sfm_f[j].observation_depth_std[k].second; 
+			}
+			if (sfm_f[j].observation[k].first == frame1)
+			{
+				point1 = Vector3d(sfm_f[j].observation[k].second.x(),sfm_f[j].observation[k].second.y(), sfm_f[j].observation_depth[k].second);
+				has_1 = (point1.z() > 0.1) ; // true;
+				std_z1 = sfm_f[j].observation_depth_std[k].second; 
+			}
+			if(has_0 && has_1) break;
+		}
+
+		if (has_0 && has_1)
+		{
+			if(std_z0 > 0 && std_z1 > 0){ // Chi2 check 
+
+				Matrix3d C_p0, C_p1, C_p0_p1; 
+				sigma_pt3d(C_p0, point0.x(), point0.y(), point0.z(), std_z0); 
+				sigma_pt3d(C_p1, point1.x(), point1.y(), point1.z(), std_z1); 
+
+				Matrix3d R10; 
+				Vector3d point_3d, point1_reprojected;
+				point0.x() = point0.x()*point0.z(); 
+				point0.y() = point0.y()*point0.z(); 
+				point_3d = Pose0_R.transpose()*point0 - Pose0_R.transpose()*Pose0_t;//shan add:this is point in world;
+				point1_reprojected = Pose1_R*point_3d+Pose1_t;
+				R10 = Pose1_R*Pose0_R.transpose(); 
+				C_p0_p1 = R10 * C_p0 * R10.transpose(); // covariance forward 
+
+				point1.x() = point1.x()*point1.z(); 
+				point1.y() = point1.y()*point1.z();
+
+				Vector3d point_residual_3d = point1_reprojected - point1; 
+				Matrix3d C_combined = C_p0_p1 + C_p1; 
+				Matrix3d C_inverse = C_combined.inverse(); 
+				double chi2_3d = point_residual_3d.transpose()*C_inverse*point_residual_3d; 
+			
+				if(chi2_3d < 7.815) // 6.25, p-value is 0.9, 7.815, p-value is 0.95 
+				{ // pass chi-square test 
+
+					// merge gaussian 
+					// Approximated covariance estimation in graphical approaches to SLAM 
+					Vector3d point_3d_1; 
+					point_3d_1 = Pose1_R.transpose()*point1 - Pose1_R.transpose()*Pose1_t;
+					Matrix3d C_p0_w, C_p1_w; 
+					C_p0_w = Pose0_R.transpose()*C_p0*Pose0_R; 
+					C_p1_w = Pose1_R.transpose()*C_p1*Pose1_R; 
+
+					Matrix3d Omega_p0_w, Omega_p1_w; 
+					Omega_p0_w = C_p0_w.inverse(); 
+					Omega_p1_w = C_p1_w.inverse(); 
+
+					// cout<<"Omega_p0_w: "<<endl<<Omega_p0_w<<endl; 
+					// cout<<"Omega_p0_w.determinant: "<<Omega_p0_w.determinant()<<endl; 
+					// cout<<"Omega_p1_w: "<<endl<<Omega_p1_w<<endl;
+					// cout<<"Omega_p1_w.determinant: "<<Omega_p1_w.determinant()<<endl; 
+
+					double w0 = 0.5; //  exp(Omega_p0_w.determinant()); 
+					double w1 = 0.5; // exp(Omega_p1_w.determinant()); 
+					double w01 = w0+w1; 
+					w0 = w0/w01; 
+					w1 = w1/w01; 
+
+					Matrix3d Omega_p01 = w0*Omega_p0_w + w1*Omega_p1_w; 
+					Matrix3d C_p01 = Omega_p01.inverse(); 
+
+					Vector3d p3d_01 = C_p01*(w0*Omega_p0_w*point_3d+w1*Omega_p1_w*point_3d_1); 
+				
+					sfm_f[j].state = true;
+					sfm_f[j].position[0] = p3d_01(0); // point_3d(0);
+					sfm_f[j].position[1] = p3d_01(1); // point_3d(1);
+					sfm_f[j].position[2] = p3d_01(2); // point_3d(2);
+					++cnt_valid;
+					// cout<<"good case, chi2_3d: "<<chi2_3d<<endl;
+					// cout<<"let'see point_3d: "<<point_3d.transpose()<<" p3d_01: "<<p3d_01.transpose()<<endl; 
+					// cout<<"C_p01: "<<endl<<C_p01<<endl;  
+					// cout<<"Omega_p0_w: "<<endl<<Omega_p0_w<<endl; 
+					// cout<<"Omega_p1_w: "<<endl<<Omega_p1_w<<endl; 
+					// cout<<"w0: "<<w0<<" w1: "<<w1<<endl; 
+				}else{
+					// cout<<"bad case, chi2_3d: "<<chi2_3d<<endl; 
+					// cout<<"point_residual_3d: "<<point_residual_3d.transpose()<<endl; 
+					// cout<<"C_inverse: "<<endl<<C_inverse<<endl; 
+				}
+				
+			}else if (point0.z()<4){ // just use z0, if it is < 4m, accoding to characterization results  
+				
+				Vector3d point_3d;
+				point0.x() = point0.x()*point0.z(); 
+				point0.y() = point0.y()*point0.z(); 
+				point_3d = Pose0_R.transpose()*point0 - Pose0_R.transpose()*Pose0_t;//shan add:this is point in world;
+				sfm_f[j].state = true;
+				sfm_f[j].position[0] = point_3d(0);
+				sfm_f[j].position[1] = point_3d(1);
+				sfm_f[j].position[2] = point_3d(2);
+				++cnt_valid;
+				// cout<<"for feature: "<< j<<" just use point0 depth measurement: "<<point0.z()<<endl;
+			}else if(point1.z()<4){  // just use z1, if it is < 4m, accoding to characterization results  
+				
+				Vector3d point_3d;
+				point1.x() = point1.x()*point1.z(); 
+				point1.y() = point1.y()*point1.z();
+				point_3d = Pose1_R.transpose()*point1 - Pose1_R.transpose()*Pose1_t;//shan add:this is point in world;
+				sfm_f[j].state = true;
+				sfm_f[j].position[0] = point_3d(0);
+				sfm_f[j].position[1] = point_3d(1);
+				sfm_f[j].position[2] = point_3d(2);
+				++cnt_valid;
+				// cout<<"for feature: "<< j<<" just use point1 depth measurement: "<<point1.z()<<endl;
+			}
+
+
+			}else{
+
+			if(has_0 && point0.z()<4){
+				Vector3d point_3d;
+				point0.x() = point0.x()*point0.z(); 
+				point0.y() = point0.y()*point0.z(); 
+				point_3d = Pose0_R.transpose()*point0 - Pose0_R.transpose()*Pose0_t;//shan add:this is point in world;
+				sfm_f[j].state = true;
+				sfm_f[j].position[0] = point_3d(0);
+				sfm_f[j].position[1] = point_3d(1);
+				sfm_f[j].position[2] = point_3d(2);
+				++cnt_valid;
+				// cout<<"for feature: "<< j<<" just use point0 depth measurement: "<<point0.z()<<endl;
+			}else if(has_1 && point1.z()<4){
+				Vector3d point_3d;
+				point1.x() = point1.x()*point1.z(); 
+				point1.y() = point1.y()*point1.z(); 
+				point_3d = Pose1_R.transpose()*point1 - Pose1_R.transpose()*Pose1_t;//shan add:this is point in world;
+				sfm_f[j].state = true;
+				sfm_f[j].position[0] = point_3d(0);
+				sfm_f[j].position[1] = point_3d(1);
+				sfm_f[j].position[2] = point_3d(2);
+				++cnt_valid;
+				// cout<<"for feature: "<< j<<" just use point1 depth measurement: "<<point1.z()<<endl;
+			}
+			
+		}
+
+			//cout << "trangulated : " << frame1 << "  3d point : "  << j << "  " << point_3d.transpose() << endl;
+	}
+	cout<<"cnt_valid sfm features: "<<cnt_valid<<" unused feature number: "<<feature_num - cnt_valid<<endl; 
 
 }
 
@@ -165,7 +337,7 @@ void GlobalSFM::triangulateTwoFramesWithDepth(int frame0, Eigen::Matrix<double, 
 			//cout << "trangulated : " << frame1 << "  3d point : "  << j << "  " << point_3d.transpose() << endl;
 		}
 	}
-	cout<<"cnt_valid sfm features: "<<cnt_valid<<" failed feature number: "<<feature_num - cnt_valid<<endl; 
+	// cout<<"cnt_valid sfm features: "<<cnt_valid<<" failed feature number: "<<feature_num - cnt_valid<<endl; 
 }
 
 
@@ -202,7 +374,7 @@ void GlobalSFM::triangulateTwoFrames(int frame0, Eigen::Matrix<double, 3, 4> &Po
 			sfm_f[j].position[0] = point_3d(0);
 			sfm_f[j].position[1] = point_3d(1);
 			sfm_f[j].position[2] = point_3d(2);
-			//cout << "trangulated : " << frame1 << "  3d point : "  << j << "  " << point_3d.transpose() << endl;
+			// cout << "trangulated : " << frame1 << "  3d point : "  << j << "  " << point_3d.transpose() << endl;
 		}							  
 	}
 }
@@ -270,12 +442,14 @@ bool GlobalSFM::construct(int frame_num, Quaterniond* q, Vector3d* T, int l,
 		}
 
 		// triangulate point based on the solve pnp result
-		triangulateTwoFramesWithDepth(i, Pose[i], frame_num - 1, Pose[frame_num - 1], sfm_f);
+		// triangulateTwoFramesWithDepth(i, Pose[i], frame_num - 1, Pose[frame_num - 1], sfm_f);
+		triangulateTwoFramesWithDepthCov(i, Pose[i], frame_num - 1, Pose[frame_num - 1], sfm_f);
 		triangulateTwoFrames(i, Pose[i], frame_num - 1, Pose[frame_num - 1], sfm_f)	;
 	}
 	//3: triangulate l-----l+1 l+2 ... frame_num -2
 	for (int i = l + 1; i < frame_num - 1; i++){
-		triangulateTwoFramesWithDepth(l, Pose[l], i, Pose[i], sfm_f);
+// 		triangulateTwoFramesWithDepth(l, Pose[l], i, Pose[i], sfm_f);
+		triangulateTwoFramesWithDepthCov(i, Pose[i], frame_num - 1, Pose[frame_num - 1], sfm_f);
 		triangulateTwoFrames(l, Pose[l], i, Pose[i], sfm_f);
 	}
 
@@ -294,7 +468,8 @@ bool GlobalSFM::construct(int frame_num, Quaterniond* q, Vector3d* T, int l,
 		Pose[i].block<3, 3>(0, 0) = c_Rotation[i];
 		Pose[i].block<3, 1>(0, 3) = c_Translation[i];
 		//triangulate
-		triangulateTwoFramesWithDepth(i, Pose[i],  l, Pose[l], sfm_f);
+// 		triangulateTwoFramesWithDepth(i, Pose[i],  l, Pose[l], sfm_f);
+		triangulateTwoFramesWithDepthCov(i, Pose[i], frame_num - 1, Pose[frame_num - 1], sfm_f);
 		triangulateTwoFrames(i, Pose[i], l, Pose[l], sfm_f);
 	}
 	//5: triangulate all other points

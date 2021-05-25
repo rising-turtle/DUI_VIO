@@ -833,14 +833,14 @@ void FeatureManager::triangulateWithDepth(Vector3d Ps[], Vector3d tic[], Matrix3
                 verified_depths.push_back(point1_projected.z());
                 // 
             }else{
-                cout <<" residual is: "<<residual.transpose()<<" norm: "<<residual.norm()<<endl; 
+               //cout <<" residual is: "<<residual.transpose()<<" norm: "<<residual.norm()<<endl; 
             }
         }
 
         if (verified_depths.size() == 0)
             continue;
-        if(verified_depths.size() >= 2)
-            ROS_DEBUG("yeah, there is some valid 3d feature match!");
+        //if(verified_depths.size() >= 2)
+            //ROS_DEBUG("yeah, there is some valid 3d feature match!");
         double depth_sum = std::accumulate(std::begin(verified_depths),std::end(verified_depths),0.0);
         double depth_ave = depth_sum / verified_depths.size();
 //        for (int i=0;i<(int)verified_depths.size();i++){
