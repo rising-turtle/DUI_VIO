@@ -250,8 +250,8 @@ bool DUI_VIO::visualInitialAlignWithDepth()
             ++cnt; 
         }
     }
-    if(cnt > 0)
-        ROS_INFO("DUI_VIO_init.cpp: tital depth rmse: %lf ", sqrt(totoal_dpt_err/cnt));
+    // if(cnt > 0)
+     //   ROS_INFO("DUI_VIO_init.cpp: tital depth rmse: %lf ", sqrt(totoal_dpt_err/cnt));
 
     Matrix3d R0 = Utility::g2R(g);
     double yaw = Utility::R2ypr(R0 * Rs[0]).x();
@@ -363,8 +363,8 @@ bool DUI_VIO::visualInitialAlign()
             ++cnt; 
         }
     }
-    if(cnt > 0)
-        ROS_INFO("DUI_VIO_init.cpp: tital depth rmse: %lf ", sqrt(totoal_dpt_err/cnt));
+    //if(cnt > 0)
+        // ROS_INFO("DUI_VIO_init.cpp: tital depth rmse: %lf ", sqrt(totoal_dpt_err/cnt));
 
 
     Matrix3d R0 = Utility::g2R(g);

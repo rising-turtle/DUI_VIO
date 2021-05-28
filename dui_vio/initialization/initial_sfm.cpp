@@ -127,8 +127,12 @@ void GlobalSFM::triangulateTwoFramesWithDepthCov(int frame0,  Matrix<double, 3, 
 				point0.y() = point0.y()*point0.z(); 
 				point_3d = Pose0_R.transpose()*point0 - Pose0_R.transpose()*Pose0_t;//shan add:this is point in world;
 				point1_reprojected = Pose1_R*point_3d+Pose1_t;
+
+				// approximate pose uncertainty 
+				Matrix3d C_pose = 0.01*Matrix3d::Identity(); 
+				
 				R10 = Pose1_R*Pose0_R.transpose(); 
-				C_p0_p1 = R10 * C_p0 * R10.transpose(); // covariance forward 
+				C_p0_p1 = R10 * C_p0 * R10.transpose() + C_pose; // covariance forward 
 
 				point1.x() = point1.x()*point1.z(); 
 				point1.y() = point1.y()*point1.z();
@@ -181,9 +185,10 @@ void GlobalSFM::triangulateTwoFramesWithDepthCov(int frame0,  Matrix<double, 3, 
 					// cout<<"Omega_p1_w: "<<endl<<Omega_p1_w<<endl; 
 					// cout<<"w0: "<<w0<<" w1: "<<w1<<endl; 
 				}else{
-					// cout<<"bad case, chi2_3d: "<<chi2_3d<<endl; 
+				 	// cout<<"bad case, chi2_3d: "<<chi2_3d<<endl; 
 					// cout<<"point_residual_3d: "<<point_residual_3d.transpose()<<endl; 
 					// cout<<"C_inverse: "<<endl<<C_inverse<<endl; 
+
 				}
 				
 			}else if (point0.z()<4){ // just use z0, if it is < 4m, accoding to characterization results  
@@ -243,7 +248,7 @@ void GlobalSFM::triangulateTwoFramesWithDepthCov(int frame0,  Matrix<double, 3, 
 
 			//cout << "trangulated : " << frame1 << "  3d point : "  << j << "  " << point_3d.transpose() << endl;
 	}
-	cout<<"cnt_valid sfm features: "<<cnt_valid<<" unused feature number: "<<feature_num - cnt_valid<<endl; 
+	// cout<<"cnt_valid sfm features: "<<cnt_valid<<" unused feature number: "<<feature_num - cnt_valid<<endl; 
 
 }
 
