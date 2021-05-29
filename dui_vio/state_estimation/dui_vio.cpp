@@ -468,6 +468,7 @@ void DUI_VIO::processImage_Init(const map<int, vector<pair<int, Eigen::Matrix<do
                 ROS_INFO("Initialization finish!");
                 showStatus();
 
+		  f_manager.triangulateWithDepth(Ps, tic, ric);
                 f_manager.triangulateSimple(frame_count, Ps, Rs, tic, ric);
                 solveOdometry();
                 // solveMono(); 
@@ -1576,10 +1577,8 @@ void DUI_VIO::solveOdometry()
     ceres::Problem problem;
     ceres::LossFunction *loss_function;
     loss_function = new ceres::CauchyLoss(1.0);    // it seems cauchyloss is much better than huberloss 
-    // loss_function = new ceres::HuberLoss(1.0);
     
     assert(frame_count == WINDOW_SIZE);
-    // ROS_DEBUG("DUI_VIO.cpp: now frame_count = %d", frame_count);
 
     // add pose 
     for(int i=0; i<= frame_count; i++){
@@ -1602,9 +1601,6 @@ void DUI_VIO::solveOdometry()
     if (last_marginalization_info && last_marginalization_info->valid){
         // construct new marginlization_factor
         MarginalizationFactor *marginalization_factor = new MarginalizationFactor(last_marginalization_info);
-        // for (int i = 0; i < last_marginalization_parameter_blocks.size(); ++i) {
-        //     printf(" DUI_VIO.cpp: last_marginalization_info parameter block %d pointer: %p \n", i, last_marginalization_parameter_blocks[i]); 
-        // }
         problem.AddResidualBlock(marginalization_factor, NULL,
                                last_marginalization_parameter_blocks);
     }
@@ -1615,20 +1611,8 @@ void DUI_VIO::solveOdometry()
         if (pre_integrations[j]->sum_dt > 10.0 )
             continue;
         IMUFactor* imu_factor = new IMUFactor(pre_integrations[j]);
-        // cout<<"IMU factor noise: "<<endl<<imu_factor->pre_integration->noise<<endl;
-        // cout<<"IMU factor jacobian: "<<endl<<imu_factor->pre_integration->jacobian<<endl;
-        // cout<<"IMU factor covariance: "<<endl<<imu_factor->pre_integration->covariance<<endl;
         problem.AddResidualBlock(imu_factor, NULL, para_Pose[i], para_SpeedBias[i], para_Pose[j], para_SpeedBias[j]);
     }
-
-    // add floor plane factor 
-    // for(int i=1; i<=frame_count; i++){
-        // if(bPls[i]){
-            // cout<<"DUI_VIO.cpp: add plane factor "<<fp_Pls.transpose()<<" at pose i = "<<i<<" pl = "<<Pls[i].transpose()<<endl;
-         //    PlaneFactor_P1 * plane_factor = new PlaneFactor_P1(fp_Pls, Pls[i]);
-         //   problem.AddResidualBlock(plane_factor, NULL, para_Pose[i]); 
-        // }
-    // }
 
     int f_m_cnt = 0; 
     int feature_index = -1; 
@@ -1660,9 +1644,6 @@ void DUI_VIO::solveOdometry()
 
                 if(shift == it_per_id.depth_shift) {
                     if(dpt_j > 0){
-                        // if(dpt_j <= 2.2){
-                        //     problem.SetParameterBlockConstant(para_Feature[feature_index]); 
-                        // }else{
                         {
                             // add single depth constraint 
                             SingleInvDepthFactor* fs = new SingleInvDepthFactor(1./dpt_j); 
@@ -1671,10 +1652,6 @@ void DUI_VIO::solveOdometry()
                             problem.AddResidualBlock(fs, loss_function, para_Feature[feature_index]);
                         }
 
-                        // TODO: add covariance info
-                        // if(dpt_j <= 3.0){
-                            // problem.SetParameterBlockConstant(para_Feature[feature_index]); 
-                        // }
                         f_m_cnt++;
                     }
                     continue;
@@ -1702,12 +1679,10 @@ void DUI_VIO::solveOdometry()
                 }
                 f_m_cnt++;
             }
-            // if(it_per_id.dpt_type == DEPTH_MES)
-            //    problem.SetParameterBlockConstant(para_Feature[feature_index]);   
-
         }else if(it_per_id.solve_flag != 2){ // feature unknown depths 
 
-            int imu_i = it_per_id.start_frame; 
+	     // ROS_ERROR("DUI_VIO.cpp: should never arrive here!"); 
+            /*int imu_i = it_per_id.start_frame; 
             Vector3d pts_i = it_per_id.feature_per_frame[0].pt; 
 
             for(int shift = 1; shift < it_per_id.feature_per_frame.size(); shift++){
@@ -1718,7 +1693,7 @@ void DUI_VIO::solveOdometry()
                 ProjectionFactor_Y2 * f= new ProjectionFactor_Y2(pts_i, pts_j); 
                 // SampsonFactorEssential * f = new SampsonFactorEssential(pts_i, pts_j); 
                 problem.AddResidualBlock(f, loss_function, para_Pose[imu_i], para_Pose[imu_j], para_Ex_Pose[0]); 
-            }
+            }*/
         }
     }
 
@@ -1759,9 +1734,6 @@ void DUI_VIO::solveOdometry()
             // construct new marginalization factor 
             MarginalizationFactor *marginalization_factor = new MarginalizationFactor(last_marginalization_info); 
             ResidualBlockInfo *residual_block_info = new ResidualBlockInfo(marginalization_factor, NULL, last_marginalization_parameter_blocks, drop_set); 
-            // for (int i = 0; i < residual_block_info->parameter_blocks.size(); ++i) {
-            //     printf(" DUI_VIO.cpp: MarginalizationFactor parameter block %d pointer: %p \n", i, residual_block_info->parameter_blocks[i]); 
-            // }
             marginalization_info->addResidualBlockInfo(residual_block_info); 
         }
 
@@ -1770,9 +1742,6 @@ void DUI_VIO::solveOdometry()
             IMUFactor * imu_factor = new IMUFactor(pre_integrations[1]); 
             ResidualBlockInfo* residual_block_info = new ResidualBlockInfo(imu_factor, NULL, vector<double*>{para_Pose[0], para_SpeedBias[0], para_Pose[1], para_SpeedBias[1]},
                        vector<int>{0,1});
-            // for (int i = 0; i < residual_block_info->parameter_blocks.size(); ++i) {
-            //     printf(" DUI_VIO.cpp: IMUFactor parameter block %d pointer: %p \n", i, residual_block_info->parameter_blocks[i]); 
-            // }
             marginalization_info->addResidualBlockInfo(residual_block_info);
         }
         
@@ -1801,108 +1770,28 @@ void DUI_VIO::solveOdometry()
                 for(int imu_j=0; imu_j<it_per_id.feature_per_frame.size(); imu_j++){
 
                     if(imu_j == imu_i){
-                        // if(dpt_j > 0){
-                        //     // add single depth constraint 
-                        //     SingleInvDepthFactor* fs = new SingleInvDepthFactor(1./dpt_j); 
-                        //     // problem.AddResidualBlock(fs, loss_function, para_Feature[feature_index]);
-                        //     ResidualBlockInfo* residual_block_info = new ResidualBlockInfo(f, loss_function, 
-                        //                     vector<double*>{para_Feature[feature_index]},
-                        //                     vector<int>{0});
-                        // }
                         continue ; 
                     }
 
                     Vector3d pts_j = it_per_id.feature_per_frame[imu_j].pt;
-                    double dpt_j = it_per_id.feature_per_frame[imu_j].dpt; 
-                    if(it_per_id.feature_per_frame[imu_j].lambda > 0 && it_per_id.feature_per_frame[imu_j].sig_l > 0){
-                        dpt_j = 1./it_per_id.feature_per_frame[imu_j].lambda; 
-                    }
-
-                    if(dpt_j <= 0){
-                        // para_Feature[feature_index][0] = 1./it_per_id.estimated_depth; 
+			// ignore depth in the marginalization item
+                    {
                         ProjectionFactor * f = new ProjectionFactor(pts_i, pts_j); 
 
                         ResidualBlockInfo* residual_block_info = new ResidualBlockInfo(f, loss_function, 
                                                             vector<double*>{para_Pose[imu_i], para_Pose[imu_j], para_Ex_Pose[0], para_Feature[feature_index]},
                                                             vector<int>{0, 3}); 
                         marginalization_info->addResidualBlockInfo(residual_block_info);
-                    }else{
-                        ProjectionDepthFactor * f = new ProjectionDepthFactor(pts_i, pts_j, 1./dpt_j);
-                        if(it_per_id.feature_per_frame[imu_j].lambda > 0 && it_per_id.feature_per_frame[imu_j].sig_l > 0){
-                            Eigen::Matrix3d C = Eigen::Matrix3d::Identity()*(1.5/FOCAL_LENGTH); 
-                            C(2,2) = it_per_id.feature_per_frame[imu_j].sig_l; 
-                            f->setSqrtCov(C);
-                        }
-
-                        ResidualBlockInfo* residual_block_info = new ResidualBlockInfo(f, loss_function, 
-                                                            vector<double*>{para_Pose[imu_i], para_Pose[imu_j], para_Ex_Pose[0], para_Feature[feature_index]},
-                                                            vector<int>{0, 3});
-                        marginalization_info->addResidualBlockInfo(residual_block_info);
-                        // string blocks;
-                        // for (int i = 0; i < residual_block_info->parameter_blocks.size(); ++i) {
-                            // printf(" DUI_VIO.cpp: up parameter block %d pointer: %p \n", i, residual_block_info->parameter_blocks[i]); 
-                        // }
                     }
                 }
             }else{
-                ROS_ERROR("now should not arrive here!");
-                Vector3d pts_j = it_per_id.feature_per_frame[0].pt;
-                double dpt_j = it_per_id.feature_per_frame[0].dpt; 
-                if(it_per_id.feature_per_frame[0].lambda > 0 && it_per_id.feature_per_frame[0].sig_l > 0){
-                    dpt_j = 1./it_per_id.feature_per_frame[0].lambda; 
-                }
-                if(dpt_j <= 0){
-                    ProjectionFactor * f = new ProjectionFactor(pts_i, pts_j); 
-
-                    // debug vector<int>{1} not work, since in marginalization, it splits the variables into two sets [m, n], m include those need to be marginalized
-                    // n include the rest variables, however, it assumes that n do not contain any features, only poses and one speedvelocity node, so here, need to add feature[] into 
-                    // m, change vector<int>{1} to vector<int>{1, 3} works 
-                    // ResidualBlockInfo* residual_block_info = new ResidualBlockInfo(f, loss_function, 
-                    //                                   vector<double*>{para_Pose[imu_i], para_Pose[0], para_Ex_Pose[0], para_Feature[feature_index]},
-                    //                                   vector<int>{1});
-
-                    ResidualBlockInfo* residual_block_info = new ResidualBlockInfo(f, loss_function, 
-                                                        vector<double*>{para_Pose[imu_i], para_Pose[0], para_Ex_Pose[0], para_Feature[feature_index]},
-                                                        vector<int>{1, 3});
-
-                    // for (int i = 0; i < residual_block_info->parameter_blocks.size(); ++i) {
-                        // printf(" DUI_VIO.cpp: down parameter block %d pointer: %p \n", i, residual_block_info->parameter_blocks[i]); 
-                    // }
-                    marginalization_info->addResidualBlockInfo(residual_block_info);
-                }else{
-                    ProjectionDepthFactor * f = new ProjectionDepthFactor(pts_i, pts_j, 1./dpt_j);
-                    if(it_per_id.feature_per_frame[0].lambda > 0 && it_per_id.feature_per_frame[0].sig_l > 0){
-                        Eigen::Matrix3d C = Eigen::Matrix3d::Identity()*(1.5/FOCAL_LENGTH); 
-                        C(2,2) = it_per_id.feature_per_frame[0].sig_l; 
-                        f->setSqrtCov(C);
-                    }
-
-                    ResidualBlockInfo* residual_block_info = new ResidualBlockInfo(f, loss_function, 
-                                                            vector<double*>{para_Pose[imu_i], para_Pose[0], para_Ex_Pose[0], para_Feature[feature_index]},
-                                                            vector<int>{1, 3});
-                    marginalization_info->addResidualBlockInfo(residual_block_info);
-                }
-                
+                ROS_ERROR("now should not arrive here!"); 
             }
 
         }else if(it_per_id.solve_flag != 2){ // feature unknown depths 
 
             if(it_per_id.start_frame != 0) 
                 continue; // no worry 
-            int imu_i = it_per_id.start_frame; 
-            Vector3d pts_i = it_per_id.feature_per_frame[0].pt; 
-
-            for(int shift = 1; shift < it_per_id.feature_per_frame.size(); shift++){
-
-                int imu_j = imu_i + shift; 
-                Vector3d pts_j = it_per_id.feature_per_frame[shift].pt; 
-
-                ProjectionFactor_Y2 * f= new ProjectionFactor_Y2(pts_i, pts_j); 
-                ResidualBlockInfo* residual_block_info = new ResidualBlockInfo(f, loss_function, 
-                                                        vector<double*>{para_Pose[imu_i], para_Pose[imu_j], para_Ex_Pose[0]},
-                                                        vector<int>{0});
-                marginalization_info->addResidualBlockInfo(residual_block_info);
-            }
         }
 
         }
