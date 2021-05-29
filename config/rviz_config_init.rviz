@@ -6,8 +6,8 @@ Panels:
       Expanded:
         - /Global Options1
         - /VIOGroup1
-        - /VIOGroup1/VIOPath1
-        - /VIOGroup1/track_image1
+        - /VIOGroup1/CameraMarker1
+        - /VIOGroup1/Key_poses1
         - /GlobalGroup1/CarModel1
       Splitter Ratio: 0.465115994
     Tree Height: 508
@@ -29,7 +29,7 @@ Panels:
     Experimental: false
     Name: Time
     SyncMode: 0
-    SyncSource: ""
+    SyncSource: track_image
   - Class: rviz/Displays
     Help Height: 78
     Name: Displays
@@ -209,7 +209,7 @@ Visualization Manager:
           Value: true
         - Class: rviz/MarkerArray
           Enabled: true
-          Marker Topic: /vins_estimator/camera_pose_visual
+          Marker Topic: /dui_vio_syn_node/camera_pose_visual
           Name: CameraMarker
           Namespaces:
             {}
@@ -240,7 +240,7 @@ Visualization Manager:
           Size (Pixels): 2
           Size (m): 0.00999999978
           Style: Points
-          Topic: /dvio_seq_node/point_cloud
+          Topic: /dui_vio_syn_node/point_cloud
           Unreliable: false
           Use Fixed Frame: true
           Use rainbow: true
@@ -270,7 +270,7 @@ Visualization Manager:
           Size (Pixels): 1
           Size (m): 0.00999999978
           Style: Points
-          Topic: /dvio_seq_node/margin_cloud
+          Topic: /dui_vio_syn_node/margin_cloud
           Unreliable: false
           Use Fixed Frame: true
           Use rainbow: true
@@ -286,6 +286,14 @@ Visualization Manager:
           Queue Size: 2
           Transport Hint: raw
           Unreliable: false
+          Value: true
+        - Class: rviz/Marker
+          Enabled: true
+          Marker Topic: /dui_vio_syn_node/key_poses
+          Name: Key_poses
+          Namespaces:
+            key_poses: true
+          Queue Size: 100
           Value: true
       Enabled: true
       Name: VIOGroup
@@ -347,25 +355,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/ThirdPersonFollower
-      Distance: 21.8973923
+      Distance: 7.64988995
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.0599999987
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: -5.43206358
-        Y: -4.75211382
-        Z: 0.381433994
+        X: -1.36738086
+        Y: -1.54988146
+        Z: 0.38143304
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.0500000007
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.00999999978
-      Pitch: 0.634796202
+      Pitch: 0.789796352
       Target Frame: world
       Value: ThirdPersonFollower (rviz)
-      Yaw: 3.1456213
+      Yaw: 4.64562321
     Saved: ~
 Window Geometry:
   Displays:

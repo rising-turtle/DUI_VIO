@@ -285,11 +285,11 @@ void process()
             header.frame_id = "world";
 
             pubOdometry(dui_vio, header);
-            // pubKeyPoses(estimator, header);
-            // pubCameraPose(estimator, header);
-            // pubPointCloud(estimator, header);
-            // pubTF(estimator, header);
-            // pubKeyframe(estimator);
+            pubKeyPoses(dui_vio, header);
+            pubCameraPose(dui_vio, header);
+            pubPointCloud(dui_vio, header);
+            pubTF(dui_vio, header);
+            pubKeyframe(dui_vio, header);
             //ROS_ERROR("end: %f, at %f", img_msg->header.stamp.toSec(), ros::Time::now().toSec());
         }
         m_estimator.unlock();

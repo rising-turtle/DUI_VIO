@@ -25,15 +25,7 @@ enum DPT_TYPE
 {
     NO_DEPTH =0, DEPTH_MES, DEPTH_TRI, INVALID
 } ;
-
-struct ip_M
-{
-    float ui, vi, uj, vj, s; // s responds to Xi = [ui,vi,1] * si
-    float disparity; // disparity of this match 
-    int ind;
-    DPT_TYPE v; 
-};
-
+ 
 
 extern void sigma_pt3d(Eigen::Matrix3d& C, double u, double v, double z, double sig_z); 
 

@@ -257,63 +257,8 @@ void FeatureManager::removeBackShiftDepth(Eigen::Matrix3d marg_R, Eigen::Vector3
                     ++cnt_invalid_depth;
                     it->estimated_depth = INIT_DEPTH;
                 }
-                /*
-                if(it->depth_shift == 0){
-                    it->depth_shift = -1; 
-                    it->estimated_depth = -1;
-                    it->dpt_type = INVALID; 
-
-                    // need to find a new depth 
-                    float min_d = -1.; 
-                    int shift = -1; 
-                    for(int i=0; i<it->feature_per_frame.size(); i++){
-                        if(it->feature_per_frame[i].dpt > 0){
-                            if(min_d < 0 || it->feature_per_frame[i].dpt < min_d)
-                            {
-                                min_d = it->feature_per_frame[i].dpt; 
-                                shift = i; 
-                                // it->depth_shift = i;
-                                // it->estimated_depth = it->feature_per_frame[i].dpt;
-                                // break;
-                            }
-                        }
-                    }
-                    // find a measured depth 
-                    if(min_d > 0 && shift >= 0){
-                        it->depth_shift = shift; 
-                        if(it->feature_per_frame[shift].lambda > 0 &&  it->feature_per_frame[shift].sig_l > 0)
-                            it->estimated_depth = 1./it->feature_per_frame[shift].lambda;
-                        else
-                            it->estimated_depth = it->feature_per_frame[shift].dpt; 
-                        it->dpt_type = DEPTH_MES; 
-                    }else{ // no depth measurement, just propergate depth 
-                        Eigen::Vector3d pts_i = uv_i * it->estimated_depth;
-                        Eigen::Vector3d w_pts_i = marg_R * pts_i + marg_P;
-                        Eigen::Vector3d pts_j = new_R.transpose() * (w_pts_i - new_P);
-                        double dep_j = pts_j(2);
-                        if(dep_j > 0.)
-                        {
-                            it->depth_shift = 0; 
-                            it->estimated_depth = dep_j; 
-                            it->dpt_type = DEPTH_TRI; 
-                        }else{
-                            // no valid depth 
-                            ++cnt_invalid_depth;
-                        }
-                    }
-
-                }else{
-                    it->depth_shift--;
-                }*/
             }
         }
-        // remove tracking-lost feature after marginalize
-        /*
-        if (it->endFrame() < WINDOW_SIZE - 1)
-        {
-            feature.erase(it);
-        }
-        */
     }
     ROS_WARN("feature_manager.cpp: number of feature depth invalid %d, number of feature to be deleted: %d", cnt_invalid_depth, cnt_deleted_feat); 
 }

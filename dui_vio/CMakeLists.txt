@@ -87,16 +87,12 @@ endif()
 # add_library(feature_tracker_in feature_tracking/feature_tracker.cpp)
 # target_link_libraries(feature_tracker_in ${CERES_LIBRARIES} ${catkin_LIBRARIES} ${OpenCV_LIBS})
 
-
-
 # dui_vio library 
 add_library(dui_vio state_estimation/dui_vio.cpp state_estimation/dui_vio_init.cpp
             state_estimation/feature_manager.cpp state_estimation/marginalization_factor.cpp state_estimation/depth_factor.cpp
             state_estimation/projection_quat.cpp state_estimation/parameters.cpp state_estimation/sampson_factor.cpp 
             state_estimation/sampson_jacobian.cpp
-            utility/visualization.cpp utility/utility.cpp
-            state_estimation/projectionOneFrameTwoCamFactor.cpp state_estimation/projectionTwoFrameOneCamFactor.cpp 
-            state_estimation/projectionTwoFrameTwoCamFactor.cpp
+            utility/visualization.cpp utility/utility.cpp utility/CameraPoseVisualization.cpp
             initialization/initial_aligment.cpp initialization/initial_ex_rotation.cpp 
             initialization/initial_sfm.cpp initialization/solve_5pts.cpp
             initialization/solve_opt.cpp initialization/translate_factor.cpp
@@ -111,10 +107,6 @@ endif()
 ## feature node 
 add_executable(feature_tracker_node feature_tracking/feature_tracker_node.cpp )
 target_link_libraries(feature_tracker_node dui_vio)
-
-## dvio 
-# add_executable(dvio_seq_node dvio/dvio_seq_node.cpp)
-# target_link_libraries(dvio_seq_node dvio)
 
 add_executable(dui_vio_syn_node state_estimation/dui_vio_syn_node.cpp)
 target_link_libraries(dui_vio_syn_node dui_vio)

@@ -25,6 +25,7 @@
 #include <eigen3/Eigen/Dense>
 #include "../state_estimation/dui_vio.h"
 #include "../state_estimation/parameters.h"
+#include "CameraPoseVisualization.h"
 #include <fstream>
 
 extern ros::Publisher pub_odometry;
@@ -49,10 +50,10 @@ void pubOdometry(const DUI_VIO &dvio, const std_msgs::Header &header);
 
 void pubKeyPoses(const DUI_VIO &dvio, const std_msgs::Header &header);
 
-// void pubCameraPose(const DUI_VIO &dvio, const std_msgs::Header &header);
+void pubCameraPose(const DUI_VIO &dvio, const std_msgs::Header &header);
 
 void pubPointCloud(const DUI_VIO &dvio, const std_msgs::Header &header);
 
 void pubTF(const DUI_VIO &dvio, const std_msgs::Header &header);
 
-// void pubKeyframe(const DUI_VIO &dvio);
+void pubKeyframe(const DUI_VIO &dvio, const std_msgs::Header &header);
