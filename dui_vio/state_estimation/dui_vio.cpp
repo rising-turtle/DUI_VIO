@@ -275,7 +275,7 @@ void DUI_VIO::processImage_Init(const map<int, vector<pair<int, Eigen::Matrix<do
                 ROS_INFO("Initialization finish!");
                 showStatus();
 
-		  f_manager.triangulateWithDepth(Ps, tic, ric);
+		        f_manager.triangulateWithDepth(Ps, tic, ric);
                 f_manager.triangulateSimple(frame_count, Ps, Rs, tic, ric);
                 solveOdometry();
                 slideWindow(); 
@@ -294,8 +294,8 @@ void DUI_VIO::processImage_Init(const map<int, vector<pair<int, Eigen::Matrix<do
         }
     }else{
 
- 	 // non state estimation  
-	 f_manager.triangulateWithDepth(Ps, tic, ric);
+ 	    // non state estimation  
+	    f_manager.triangulateWithDepth(Ps, tic, ric);
         f_manager.triangulateSimple(frame_count, Ps, Rs, tic, ric);
         solveOdometry();
 
@@ -371,6 +371,24 @@ void DUI_VIO::slideWindow()
             dt_buf[WINDOW_SIZE].clear();
             linear_acceleration_buf[WINDOW_SIZE].clear();
             angular_velocity_buf[WINDOW_SIZE].clear();
+
+            {
+                map<double, ImageFrame>::iterator it_0;
+                it_0 = all_image_frame.find(t_0);
+                delete it_0->second.pre_integration;
+                it_0->second.pre_integration = nullptr;
+
+                for (map<double, ImageFrame>::iterator it = all_image_frame.begin(); it != it_0; ++it)
+                {
+                    if (it->second.pre_integration)
+                        delete it->second.pre_integration;
+                    it->second.pre_integration = NULL;
+                }
+
+                all_image_frame.erase(all_image_frame.begin(), it_0);
+                all_image_frame.erase(t_0);
+
+            }
 
             slideWindowOld(); 
         }else{

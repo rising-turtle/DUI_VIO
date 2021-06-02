@@ -313,6 +313,11 @@ bool MotionEstimator::solveRelativeHybrid(const vector<pair<Vector3d, Vector3d>>
         int inlier_cnt = cv::recoverPose(E, ll, rr, cameraMatrix, rot, trans, mask);
         cout << "solve_5pts.cpp: in solveRelativeHybrid(): inlier_cnt " << inlier_cnt << endl;
 
+	if(inlier_cnt <= 12){
+		ROS_DEBUG("solve_5pts.cpp: in solveRelativeHybrid(): inlier_cnt %d is too small, return false", inlier_cnt); 
+		return false;
+	}
+		
         Eigen::Matrix3d R;
         Eigen::Vector3d T;
         for (int i = 0; i < 3; i++)
