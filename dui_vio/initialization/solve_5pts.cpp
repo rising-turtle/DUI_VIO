@@ -313,10 +313,10 @@ bool MotionEstimator::solveRelativeHybrid(const vector<pair<Vector3d, Vector3d>>
         int inlier_cnt = cv::recoverPose(E, ll, rr, cameraMatrix, rot, trans, mask);
         cout << "solve_5pts.cpp: in solveRelativeHybrid(): inlier_cnt " << inlier_cnt << endl;
 
-	if(inlier_cnt <= 12){
-		ROS_DEBUG("solve_5pts.cpp: in solveRelativeHybrid(): inlier_cnt %d is too small, return false", inlier_cnt); 
-		return false;
-	}
+	    if(inlier_cnt <= 12){
+		  ROS_DEBUG("solve_5pts.cpp: in solveRelativeHybrid(): inlier_cnt %d is too small, return false", inlier_cnt); 
+		  return false;
+	    }
 		
         Eigen::Matrix3d R;
         Eigen::Vector3d T;
@@ -340,13 +340,13 @@ bool MotionEstimator::solveRelativeHybrid(const vector<pair<Vector3d, Vector3d>>
         // if use opengv to refine the rotation 
 #ifdef USE_OPENGV
 
-        // cout<<"before opengv R: "<<endl<<R<<endl; 
+        cout<<"before opengv R: "<<endl<<R<<endl; 
         std::vector<pair<Vector3d, Vector3d>> inliers_2d = getInliers2D(corres, mask);
 
 	 // ofstream ouf("matched_inliers.log"); 
 	 
 
-        Eigen::Matrix3d Rij_e = R;
+        Eigen::Matrix3d Rij_e = R.transpose();
 
         opengv::bearingVectors_t bearingVectors1; 
         opengv::bearingVectors_t bearingVectors2;
@@ -363,11 +363,13 @@ bool MotionEstimator::solveRelativeHybrid(const vector<pair<Vector3d, Vector3d>>
         opengv::relative_pose::CentralRelativeAdapter adapter_rbs(
               bearingVectors1,
               bearingVectors2,
-              Rij_e ); // rotation);
+              Rij_e ); // rotation); R12 
 
         // first use eight pts to compute initial rotation 
-        R =  opengv::relative_pose::eigensolver(adapter_rbs);       
-        // cout <<"after opengv R: "<<endl<<R<<endl; 
+        Rij_e = opengv::relative_pose::eigensolver(adapter_rbs);    // bug, return R12, Rij, but R is Rji 
+        R = Rij_e.transpose(); 
+
+        cout <<"after opengv R: "<<endl<<R<<endl; 
 #endif
 
         if(inlier_cnt > 12 && inliers.size() >= 5){
@@ -375,21 +377,19 @@ bool MotionEstimator::solveRelativeHybrid(const vector<pair<Vector3d, Vector3d>>
             // optimization to solve R, T // R is Rji, T is tji
             // sopt.solveHybrid(inliers, R, T, pcov); 
             sopt.solveTCeres(inliers, R, T, pcov); 
-
             Rotation = R.transpose(); // Rotation is Rij
             Translation = -R.transpose() * T; // Translation is tij 
 
             // ROS_WARN("---------------5points----------------");
-            ROS_WARN("input points %d 2D inliers %d 3D inliers %d", ll.size(), inlier_cnt, inliers.size()); 
-
+            ROS_WARN("solve_5pts.cpp: input points %d 2D inliers %d 3D inliers %d", ll.size(), inlier_cnt, inliers.size()); 
             return true;
         }
         else{
-            ROS_DEBUG("2D inlier_cnt: %d 3D inliers: %d", inlier_cnt, inliers.size());
+            ROS_DEBUG("solve_5pts.cpp: 2D inlier_cnt: %d 3D inliers: %d", inlier_cnt, inliers.size());
             return false;
         }
     }else{
-        ROS_DEBUG("2D corresponds cnt: %d", corres.size());
+        ROS_DEBUG("solve_5pts.cpp: 2D corresponds cnt: %d", corres.size());
     }
     return false;
 }

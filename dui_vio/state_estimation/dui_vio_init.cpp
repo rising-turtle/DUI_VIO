@@ -153,7 +153,7 @@ bool DUI_VIO::initialStructure()
         cv::cv2eigen(t, T_pnp);
         T_pnp = R_pnp * (-T_pnp);
         frame_it->second.R = R_pnp * RIC[0].transpose();
-        cout<<"R_pnp: "<<endl<<R_pnp<<endl;
+        // cout<<"R_pnp: "<<endl<<R_pnp<<endl;
         frame_it->second.T = T_pnp;
     }
     // if (visualInitialAlign())

@@ -372,6 +372,7 @@ void DUI_VIO::slideWindow()
             linear_acceleration_buf[WINDOW_SIZE].clear();
             angular_velocity_buf[WINDOW_SIZE].clear();
 
+            if(solver_flag == INITIAL)
             {
                 map<double, ImageFrame>::iterator it_0;
                 it_0 = all_image_frame.find(t_0);
