@@ -142,6 +142,7 @@ void DUI_VIO::associateDepthSimple(map<int, vector<pair<int, Eigen::Matrix<doubl
     // x, y, z, p_u, p_v, velocity_x, velocity_y;
     map<int, vector<pair<int, Eigen::Matrix<double, 10, 1>>>>::iterator it = featureFrame.begin(); 
     // int valid_depth_cnt = 0; 
+    static poly cp_depth_cov; 
     while(it != featureFrame.end()){
 
         float nor_ui = it->second[0].second(0); 
@@ -152,6 +153,9 @@ void DUI_VIO::associateDepthSimple(map<int, vector<pair<int, Eigen::Matrix<doubl
         float d = (float)dpt.at<unsigned short>(std::round(vi), std::round(ui)) * 0.001;
         if(d>= 0.3 && d <= 7) {
             it->second[0].second(2) = d;
+            it->second[0].second(7) = 1./d; 
+            it->second[0].second(8) = cp_depth_cov.y(d); 
+            it->second[0].second(9) = 0.0005; 
             // ++valid_depth_cnt;
         }else{
             it->second[0].second(2) = 0.; // make it an invalid depth value 

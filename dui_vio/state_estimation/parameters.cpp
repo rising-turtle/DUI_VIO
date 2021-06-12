@@ -104,7 +104,7 @@ void readParameters(ros::NodeHandle &n)
 
     fsSettings["output_path"] >> VINS_RESULT_PATH;
     // VINS_RESULT_PATH = VINS_FOLDER_PATH + VINS_RESULT_PATH;
-    VINS_RESULT_PATH = VINS_RESULT_PATH + "/idu_vio.csv"; 
+    VINS_RESULT_PATH = VINS_RESULT_PATH + "/dui_vio_no_loop.csv"; 
     std::ofstream foutC(VINS_RESULT_PATH, std::ios::out);
     foutC.close();
 
