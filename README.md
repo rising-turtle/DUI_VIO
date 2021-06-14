@@ -3,8 +3,16 @@
 
 **Videos:** run with some data sequences in [VCU-RVI](https://github.com/rising-turtle/VCU_RVI_Benchmark)
 
+<a href="https://www.https://www.youtube.com/watch?v=nhIlObPyj9I" target="_blank"><img src="http://i.ytimg.com/vi/nhIlObPyj9I/maxresdefault.jpg" 
+alt="cla" width="240" height="180" border="10" /></a>
+  <a href="https://www.https://www.youtube.com/watch?v=IbUUxuumMM0" target="_blank"><img src="http://i.ytimg.com/vi/IbUUxuumMM0/maxresdefault.jpg" 
+alt="cla" width="240" height="180" border="10" /></a>
+  <a href="https://www.https://www.youtube.com/watch?v=Ul80tpgYLRk" target="_blank"><img src="http://i.ytimg.com/vi/Ul80tpgYLRk/maxresdefault.jpg" 
+alt="cla" width="240" height="180" border="10" /></a>
+
 **Related Paper**
 
+He Zhang and Cang Ye, **"DUI-VIO: Depth uncertainty incorporated visual inertial odometry based on an RGB-D camera"**, *IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS)*, 2020. [pdf](https://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=9341592&casa_token=77pz5u6JoEgAAAAA:sV2YOzlwdmwiFRFIuZVXGAdgQCSE0qCG_vJ2ttIOr6P8Ay_0t0BQepgR8cE97I28mBLeIoU&tag=1)
 
 ## 1. Prerequisites
 1.1 **Ubuntu** and **ROS**
