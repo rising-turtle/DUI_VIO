@@ -20,7 +20,7 @@ endif(COMMAND cmake_policy)
 
 # rosbuild_init()
 
-option(WITH_OPENGV "use opengv" ON) #use opengv or not in hybridPnP 
+option(WITH_OPENGV "use opengv" OFF) #ON use opengv or not in hybridPnP 
 
 #set the default path for built executables to the "bin" directory
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
