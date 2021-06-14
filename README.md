@@ -3,16 +3,16 @@
 
 **Videos:** run with some data sequences in [VCU-RVI](https://github.com/rising-turtle/VCU_RVI_Benchmark)
 
-<a href="https://www.https://www.youtube.com/watch?v=nhIlObPyj9I" target="_blank"><img src="http://i.ytimg.com/vi/nhIlObPyj9I/maxresdefault.jpg" 
+<a href="https://www.youtube.com/watch?v=nhIlObPyj9I" target="_blank"><img src="http://i.ytimg.com/vi/nhIlObPyj9I/maxresdefault.jpg" 
 alt="cla" width="240" height="180" border="10" /></a>
-  <a href="https://www.https://www.youtube.com/watch?v=IbUUxuumMM0" target="_blank"><img src="http://i.ytimg.com/vi/IbUUxuumMM0/maxresdefault.jpg" 
+  <a href="https://www.youtube.com/watch?v=IbUUxuumMM0" target="_blank"><img src="http://i.ytimg.com/vi/IbUUxuumMM0/maxresdefault.jpg" 
 alt="cla" width="240" height="180" border="10" /></a>
-  <a href="https://www.https://www.youtube.com/watch?v=Ul80tpgYLRk" target="_blank"><img src="http://i.ytimg.com/vi/Ul80tpgYLRk/maxresdefault.jpg" 
+  <a href="https://www.youtube.com/watch?v=Ul80tpgYLRk" target="_blank"><img src="http://i.ytimg.com/vi/Ul80tpgYLRk/maxresdefault.jpg" 
 alt="cla" width="240" height="180" border="10" /></a>
 
 **Related Paper**
 
-He Zhang and Cang Ye, **"DUI-VIO: Depth uncertainty incorporated visual inertial odometry based on an RGB-D camera"**, *IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS)*, 2020. [pdf](https://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=9341592&casa_token=77pz5u6JoEgAAAAA:sV2YOzlwdmwiFRFIuZVXGAdgQCSE0qCG_vJ2ttIOr6P8Ay_0t0BQepgR8cE97I28mBLeIoU&tag=1)
+He Zhang and Cang Ye, **"DUI-VIO: Depth uncertainty incorporated visual inertial odometry based on an RGB-D camera"**, *IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS)*, 2020. [pdf](https://ieeexplore.ieee.org/document/9341592)
 
 ## 1. Prerequisites
 1.1 **Ubuntu** and **ROS**
@@ -44,5 +44,13 @@ option(WITH_OPENGV "use opengv" ON) #use opengv or not in hybridPnP
 set(opengv_DIR "/PATH_TO_OPENGV/opengv/build")
 ```
 
-## 4. Licence
+## 4. Demos
+Download the [bag_files](https://vcu-rvi-dataset.github.io/2020/08/14/Dataset-Download/) which were collected by a structure-core camera handheld or robot carried. Open a terminal, navigate to the 'DUI_VIO/launch' folder, and launch the dui_vio_sc_run. Open another terminal and play the bag file. 
+
+```
+    roslaunch dui_vio_sc_run.launch
+    rosbag play YOUR_PATH_TO_DATASET/lab_*.bag 
+```
+
+## 5. Licence
 The source code is released under [GPLv3](http://www.gnu.org/licenses/) license.
